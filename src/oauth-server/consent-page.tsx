@@ -75,6 +75,7 @@ export function ConsentPage(props: ConsentPageProps) {
       </section>
       <DecisionForm csrfToken={csrfToken} requestId={props.requestId} decision="approve" />{' '}
       <DecisionForm csrfToken={csrfToken} requestId={props.requestId} decision="deny" />
+      <p class="notice">Not financial advice. Guardrail Gateway never recommends trades.</p>
     </Layout>
   );
 }
