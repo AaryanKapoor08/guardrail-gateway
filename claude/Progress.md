@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 11 — Dashboard Polish (M7)** (P5 deferred to Aaryan)
+**Current Phase: PHASE 12 — Webhooks (M8)** (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -21,6 +21,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 8 complete in code and merged to main (CI green). Propose → approve → paper fill flow: symbol resolution, prefetch outside the lock, per-user lock + dbCounts + evaluate inside it, idempotency, approval page (V§9.2) with CSRF POSTs, paper executor and ledger, kill switch/mode service functions, intent history and cancel, disconnect cancels pending intents, best-effort Resend email, 60s sweeper, scripts/demo-flow.ts. 563 tests. Decision D19. Human checks pending: dev-DB run + browser approval, V§9.2 manual checklist. Next: PHASE 9.
 - 2026-10-04 (single-agent build): PHASE 9 complete in code and merged to main (CI green). Hand-written OAuth authorization server for MCP clients: PRM + AS metadata, CIMD with host allowlist and bounded fetch, loopback redirect matching, consent page (requester host, redirect host, loopback warning), single-use 60 s codes, PKCE S256, rotating opaque tokens with reuse detection, RFC 7009 revocation, verifyAccessToken for the MCP gate, per-IP rate limit, Connected AI apps page. 624 tests. Decision D20. Human check pending: curl the deployed AS metadata (after P5). Next: PHASE 10.
 - 2026-10-04 (single-agent build): PHASE 10 complete in code and merged to main (CI green). MCP endpoint on SDK v2 (createMcpHandler, JSON responses, stateless, both protocol eras) behind requireBearerAuth with our verifier, Host/Origin checks, the 8 tools with strict inputs, output schemas, annotations, safe error handling, per-user limits (60 calls, 10 proposals a minute). 647 tests. Decision D21. Human checks pending: the Q5 gate with real Claude web/Code, Inspector, revoke-from-dashboard (all need the P5 deploy). Next: PHASE 11.
+- 2026-10-04 (single-agent build): PHASE 11 complete in code and merged to main (CI green). Policy editor (validated by the engine's own schema, version bump, before/after audit), kill switch and mode controls with header state, audit log view, account deletion (best-effort revoke, one transaction under the audit trigger), public privacy page. Fixed a sync isolation bug found by the deletion test. 686 tests. Decision D22. Human check pending: browser walk-through of every setting. Next: PHASE 12.
 
 ---
 
@@ -131,13 +132,13 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(mcp): mount sdk v2 handler behind bearer gate` · `feat(mcp): add read-only account and policy tools` · `feat(mcp): add propose status list and cancel tools` · `test(mcp): end-to-end tool flow through mcp client`
 - Notes: Built 2026-10-04 and merged to main (CI run 37192773388 green). 647 tests. 23 MCP tests through the real SDK client wired to app.fetch, on both the 2025 (initialize) and 2026-07-28 protocol paths: 401 + resource_metadata without a token, 401 after the app is revoked, 403 for a foreign Host, exactly 8 tools in order with annotations and the approval sentence, propose → approve over HTTP → get_order_status FILLED, policy rejection as a normal result, another user's account not found, extra user_id refused, 11th proposal in a minute refused, reconnect message as a normal result. The ⛔ Q5 gate (real Claude web + Claude Code against the deployed URL, `oauth.client_seen` logs) and the keep-awake check need P5's deploy and Aaryan. Extra commit: `docs: record phase 10 mcp decisions`. See D21.
 
-### PHASE 11 — Dashboard Polish (M7) [not started]
+### PHASE 11 — Dashboard Polish (M7) [in progress — human checks pending]
 
 - [ ] Manual checklist: each setting changes behaviour as expected (try each in the browser + one propose)
-- [ ] Account deletion test proves zero remaining rows
-- [ ] Privacy page reachable logged out
-- [ ] Commits: `feat(web): add policy editor with audit trail` · `feat(web): add kill switch and mode controls` · `feat(web): add audit log view` · `feat(web): add account deletion and privacy page` · `test(web): cover dashboard settings and deletion`
-- Notes:
+- [x] Account deletion test proves zero remaining rows
+- [x] Privacy page reachable logged out
+- [x] Commits: `feat(web): add policy editor with audit trail` · `feat(web): add kill switch and mode controls` · `feat(web): add audit log view` · `feat(web): add account deletion and privacy page` · `test(web): cover dashboard settings and deletion`
+- Notes: Built 2026-10-04 and merged to main (CI run 37193321192 green). 686 tests. Automated equivalents of the manual checklist pass: a lower per-order limit rejects the next proposal; denylist and allowlist; currency change refused with open intents; kill switch on/off round trip with the header bar; live mode disabled with the failing gates (and a forced POST refused); audit log newest first with escaped details; deletion leaves zero rows in every table with a user_id column (found from information_schema), plus codes, tokens, executions, and webhook_events, while another user's rows are untouched; every POST refuses a missing CSRF token; every page except /, /privacy, /login needs a session. The deletion test exposed a sync isolation bug (fixed: `fix(sync): link accounts only to the user's own connection rows`). Extra commit: `docs: record phase 11 dashboard decisions`. See D22. The browser walk-through is Aaryan's.
 
 ### PHASE 12 — Webhooks (M8) [not started]
 
