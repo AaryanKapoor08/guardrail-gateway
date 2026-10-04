@@ -162,4 +162,29 @@ describe('syncIfStale', () => {
     await syncIfStale(testApp.deps, userId);
     expect(testApp.fake.countRequests('/accounts')).toBe(callsAfterSignIn + 1);
   });
+
+  it('never links an account to a connection row that belongs to another user', async () => {
+    // A second user whose SnapTrade answers claim the first user's connection id.
+    testApp.fake.onApi('GET', /^\/authorizations$/, () => ({
+      status: 200,
+      body: [buildConnection()],
+    }));
+    testApp.fake.onApi('GET', /^\/accounts$/, () => ({ status: 200, body: [buildAccount()] }));
+    const other = await signInTestUser(testApp, {
+      sub: 'snaptrade-user-2',
+      email: 'b@example.com',
+    });
+
+    const summary = await syncUserConnectionsAndAccounts(testApp.deps, other.userId);
+
+    expect(summary).toMatchObject({ connections: 0, accounts: 0 });
+    expect(
+      await testApp.deps.db.select().from(accounts).where(eq(accounts.userId, other.userId)),
+    ).toEqual([]);
+    const [shared] = await testApp.deps.db
+      .select({ userId: connections.userId })
+      .from(connections)
+      .where(eq(connections.id, SANDBOX_CONNECTION_ID));
+    expect(shared?.userId).toBe(userId);
+  });
 });

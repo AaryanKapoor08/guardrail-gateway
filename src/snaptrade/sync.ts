@@ -23,16 +23,19 @@ export type SyncSummary = {
   readonly missingAccounts: number;
 };
 
+// Returns the ids of the connections now stored for this user. A connection id already stored
+// for another user is left alone and not returned (SnapTrade ids are unique, so that would mean
+// something is badly wrong; isolation comes first).
 async function upsertConnections(
   tx: Transaction,
   userId: string,
   fetched: readonly SnapTradeConnection[],
   now: Date,
-): Promise<void> {
+): Promise<Set<string>> {
   if (fetched.length === 0) {
-    return;
+    return new Set();
   }
-  await tx
+  const stored = await tx
     .insert(connections)
     .values(
       fetched.map((connection) => ({
@@ -56,7 +59,9 @@ async function upsertConnections(
       },
       // Never touch a row that belongs to someone else.
       setWhere: eq(connections.userId, userId),
-    });
+    })
+    .returning({ id: connections.id });
+  return new Set(stored.map((connection) => connection.id));
 }
 
 function accountRow(userId: string, account: SnapTradeAccount, brokerageName: string, now: Date) {
@@ -144,13 +149,17 @@ export async function syncUserConnectionsAndAccounts(
   });
   const now = deps.now();
   const summary = await deps.db.transaction(async (tx) => {
-    await upsertConnections(tx, userId, fetchedConnections, now);
-    await upsertAccounts(tx, userId, linkedAccounts, now);
-    const presentIds = linkedAccounts.map(({ account }) => account.snaptradeAccountId);
+    const ownConnectionIds = await upsertConnections(tx, userId, fetchedConnections, now);
+    // An account may only point at this user's own connection row.
+    const ownAccounts = linkedAccounts.filter(({ account }) =>
+      ownConnectionIds.has(account.connectionId),
+    );
+    await upsertAccounts(tx, userId, ownAccounts, now);
+    const presentIds = ownAccounts.map(({ account }) => account.snaptradeAccountId);
     const missingAccounts = await markMissingAccounts(tx, userId, presentIds, now);
     const result = {
-      connections: fetchedConnections.length,
-      accounts: linkedAccounts.length,
+      connections: ownConnectionIds.size,
+      accounts: ownAccounts.length,
       missingAccounts,
     };
     await writeAudit(tx, {

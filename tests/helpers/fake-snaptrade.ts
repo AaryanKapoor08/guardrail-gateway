@@ -45,7 +45,8 @@ type IssuedCode = {
   readonly options: AuthorizeOptions;
 };
 
-export type ApiHandler = (request: RecordedRequest) => FakeResponse;
+// `callerSub` is the SnapTrade user the access token was issued to.
+export type ApiHandler = (request: RecordedRequest, callerSub: string) => FakeResponse;
 
 type ApiRoute = { readonly method: string; readonly pattern: RegExp; readonly handler: ApiHandler };
 
@@ -93,6 +94,14 @@ function newToken(prefix: string): string {
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export const FIRST_USER_SUB = 'snaptrade-user-1';
+
+// Real SnapTrade connection ids are unique, so every test user after the first gets its own
+// copy of the brokerage's connection ids. Account ids may repeat across users.
+function connectionIdFor(connectionId: string, callerSub: string): string {
+  return callerSub === FIRST_USER_SUB ? connectionId : `${connectionId}-${callerSub}`;
 }
 
 const NOT_FOUND: FakeResponse = { status: 404, body: { detail: 'Account not found' } };
@@ -189,7 +198,8 @@ export async function createFakeSnapTrade(options: {
 
   const requests: RecordedRequest[] = [];
   const codes = new Map<string, IssuedCode>();
-  const accessTokens = new Set<string>();
+  // access token -> the SnapTrade user (sub) it was issued to.
+  const accessTokens = new Map<string, string>();
   // refresh token -> sub. Using a refresh token removes it (rotation).
   const refreshTokens = new Map<string, string>();
   const tokenFailures: FakeResponse[] = [];
@@ -229,11 +239,20 @@ export async function createFakeSnapTrade(options: {
     brokerage: buildDefaultBrokerage(),
   };
 
-  fake.onApi('GET', /^\/authorizations$/, () => ({
+  fake.onApi('GET', /^\/authorizations$/, (_request, callerSub) => ({
     status: 200,
-    body: fake.brokerage.connections,
+    body: fake.brokerage.connections.map((connection) => ({
+      ...connection,
+      id: connectionIdFor(connection.id, callerSub),
+    })),
   }));
-  fake.onApi('GET', /^\/accounts$/, () => ({ status: 200, body: fake.brokerage.accounts }));
+  fake.onApi('GET', /^\/accounts$/, (_request, callerSub) => ({
+    status: 200,
+    body: fake.brokerage.accounts.map((account) => ({
+      ...account,
+      brokerage_authorization: connectionIdFor(account.brokerage_authorization, callerSub),
+    })),
+  }));
   registerAccountDataRoutes(fake);
 
   function authorize(authorizeUrl: string, authorizeOptions: AuthorizeOptions = {}): string {
@@ -269,7 +288,7 @@ export async function createFakeSnapTrade(options: {
   function issueTokens(sub: string): { access_token: string; refresh_token: string } {
     const accessToken = newToken('access');
     const refreshToken = newToken('refresh');
-    accessTokens.add(accessToken);
+    accessTokens.set(accessToken, sub);
     refreshTokens.set(refreshToken, sub);
     return { access_token: accessToken, refresh_token: refreshToken };
   }
@@ -293,7 +312,7 @@ export async function createFakeSnapTrade(options: {
     if (pkceChallenge(form.get('code_verifier') ?? '') !== issued.codeChallenge) {
       return { status: 400, body: { error: 'invalid_grant' } };
     }
-    const sub = issued.options.sub ?? 'snaptrade-user-1';
+    const sub = issued.options.sub ?? FIRST_USER_SUB;
     const tokens = issueTokens(sub);
     return {
       status: 200,
@@ -343,7 +362,8 @@ export async function createFakeSnapTrade(options: {
 
   function handleApiRequest(request: RecordedRequest): FakeResponse {
     const authorization = request.headers.get('authorization') ?? '';
-    if (!accessTokens.has(authorization.replace(/^Bearer /, ''))) {
+    const callerSub = accessTokens.get(authorization.replace(/^Bearer /, ''));
+    if (callerSub === undefined) {
       return { status: 401, body: { detail: 'Invalid token' } };
     }
     const path = request.url.pathname;
@@ -357,7 +377,7 @@ export async function createFakeSnapTrade(options: {
     );
     return route === undefined
       ? { status: 404, body: { detail: 'Not found' } }
-      : route.handler(request);
+      : route.handler(request, callerSub);
   }
 
   async function route(request: RecordedRequest): Promise<FakeResponse> {
