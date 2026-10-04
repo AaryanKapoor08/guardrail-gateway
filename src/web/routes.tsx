@@ -9,7 +9,9 @@ import { listPaperPositions } from '../executors/paper.js';
 import { cancelIntent } from '../intents/decisions.js';
 import { listRecentIntents } from '../intents/service.js';
 import { NeedsReauthError, NotFoundError } from '../lib/errors.js';
+import { disconnectApp, listConnectedApps } from '../oauth-server/grants.js';
 import { syncIfStale, syncUserConnectionsAndAccounts } from '../snaptrade/sync.js';
+import { AppsPage } from './pages/apps.js';
 import { DashboardPage, type SyncProblem } from './pages/dashboard.js';
 import { ErrorPage } from './pages/error.js';
 import { HomePage } from './pages/home.js';
@@ -142,6 +144,33 @@ async function cancelFromHistory(deps: Deps, c: Context<SignedInEnv>): Promise<R
   return c.redirect('/intents');
 }
 
+async function showApps(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
+  const { session, user } = c.var;
+  const apps = await listConnectedApps(deps.db, user.id);
+  return renderPage(c, <AppsPage signedIn={{ session, user }} apps={apps} />);
+}
+
+async function revokeApp(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
+  const { session, user } = c.var;
+  const grantId = z.uuid().safeParse(c.req.param('id'));
+  try {
+    if (!grantId.success) {
+      throw new NotFoundError("We couldn't find that app.");
+    }
+    await disconnectApp(deps, { userId: user.id, grantId: grantId.data });
+  } catch (error) {
+    if (!(error instanceof NotFoundError)) {
+      throw error;
+    }
+    return renderPage(
+      c,
+      <ErrorPage title="App not found" message={error.message} signedIn={{ session, user }} />,
+      404,
+    );
+  }
+  return c.redirect('/apps');
+}
+
 export function registerWebRoutes(app: Hono, deps: Deps): void {
   app.get('/', async (c) => {
     const signedIn = await loadSession(deps, c);
@@ -158,4 +187,6 @@ export function registerWebRoutes(app: Hono, deps: Deps): void {
   app.post('/accounts/:ref/allow', requireSession(deps), verifyCsrf, (c) =>
     changeAccountAllowed(deps, c),
   );
+  app.get('/apps', requireSession(deps), (c) => showApps(deps, c));
+  app.post('/apps/:id/revoke', requireSession(deps), verifyCsrf, (c) => revokeApp(deps, c));
 }

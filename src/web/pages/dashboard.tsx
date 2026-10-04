@@ -114,6 +114,9 @@ function McpBox(props: { mcpUrl: string }) {
         <strong>Claude Code:</strong>{' '}
         <code>{`claude mcp add --transport http guardrail ${props.mcpUrl}`}</code>
       </p>
+      <p>
+        <a href="/apps">Connected AI apps</a> (see and disconnect apps)
+      </p>
     </section>
   );
 }
