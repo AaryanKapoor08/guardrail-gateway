@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
-    "db:test:up": "docker compose up -d db-test"
+    "db:test:up": "docker compose up -d db-test",
+    "test:coverage": "vitest run --coverage"
   },
   "repository": {
     "type": "git",
@@ -41,6 +42,7 @@
     "@types/big.js": "^7.0.0",
     "@types/node": "^24.19.1",
     "@types/pg": "^8.23.1",
+    "@vitest/coverage-v8": "^5.0.3",
     "drizzle-kit": "^0.31.11",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

@@ -54,5 +54,6 @@ jobs:
       - name: Lint and typecheck
         run: npm run check
 
-      - name: Test
-        run: npm test
+      # Also enforces 100% branch coverage on the policy engine and state machine.
+      - name: Test with coverage
+        run: npm run test:coverage
