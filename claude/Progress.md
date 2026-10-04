@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 4 — Accounts Sync + Dashboard (M1, part 2)**
+**Current Phase: PHASE 6 — Token Lifecycle (M3)** (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -15,6 +15,7 @@ Last Updated: 2026-10-04
 - 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Instant-demo phase (P14) added so anyone can test in < 2 minutes; free hosting (Render free + 5-min ping). SnapTrade Personal has SnapTrade Sandbox (Active, read-only) + a real Wealthsimple connection (read-only; keep it NOT allowed in our app during development; useful for Q6 raw_type in the P5 spike). Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
 - 2026-10-04 (overnight autonomous build, batch 1): PHASE 1 + PHASE 2 complete and fast-forward merged to main; CI green on both branches and on main. Hono + TypeScript 7.0.2 + Biome 2.5 scaffold, Zod env validation (fails fast, names only), `/health` with DB check, graceful shutdown, GitHub Actions CI. Full V§14.1 schema (17 tables, incl. `users.is_demo` + `(is_demo, created_at)` index) migrated to Neon and the Docker test DB; append-only audit trigger (V§14.3 verbatim); AES-256-GCM field encryption, PKCE, sha256/random tokens, money (big.js), typed errors, Toronto time display, `writeAudit`. 82 tests passing in 8 files. Decisions D13 + D14 in DECISIONS.md. Next: PHASE 3 on branch `feat/p3-…`.
 - 2026-10-04 (single-agent build): PHASE 3 complete in code and merged to main (CI green). Sign in with SnapTrade (OIDC + PKCE + state + nonce, discovery with 24h cache, id_token checks with an injected key source), hashed DB sessions with fixation protection, per-session CSRF tokens plus an Origin check against APP_BASE_URL, security headers, home/dashboard/error pages, strict default policy schema. Fake SnapTrade (RS256 keys, token endpoint with rotation and counters, revocation, data API hooks) and test app helpers added. 142 tests. Human checks pending: real browser sign-in, Deny once, check ciphertext in Neon, check dev logs. Decision D15. Next: PHASE 4.
+- 2026-10-04 (single-agent build): PHASE 4 complete in code and merged to main (CI green). snaptradeFetch (10s timeout, 2 read retries on 429/5xx/network using SnapTrade reset headers then body hint then jittered backoff, status-only errors and logs), typed /authorizations and /accounts calls with tolerant Zod schemas, sync into connections/accounts (new accounts not allowed, last 4 only, missing accounts present=false), 5-minute sync cache, dashboard accounts table with allow toggles, refresh, broken-connection and reconnect banners, MCP URL box. Migration 0002 (nullable raw_type, number_last4). 167 tests. Decision D16. Next: PHASE 6 (P5 skipped: deploy + real API check is Aaryan's).
 
 ---
 
@@ -60,15 +61,15 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(policy): add policy schema with strict defaults` · `feat(snaptrade): discover oauth and oidc metadata` · `feat(oidc): sign in with snaptrade using pkce state and nonce` · `feat(auth): add hashed db sessions and csrf protection` · `test(oidc): cover login success and failure paths`
 - Notes: Built 2026-10-04 and merged to main (CI run 37181007658 green). 142 tests pass. Automated equivalents of the manual items pass against the fake SnapTrade: tokens stored as `v1:` ciphertext that decrypts to the fake's issued tokens; declined consent page stores nothing; a test captures every log line and asserts no code, state, or token appears. The manual items need Aaryan's real browser sign-in. Extra commits: `refactor(db): share order constants with the policy module`, `docs: record phase 3 sign-in decisions`. TTL cache pulled forward from P4. See D15.
 
-### PHASE 4 — Accounts Sync + Dashboard (M1, part 2) [not started]
+### PHASE 4 — Accounts Sync + Dashboard (M1, part 2) [in progress — human checks pending]
 
 - [ ] Manual: after sign-in, the dashboard lists Sandbox accounts, all **not allowed**
 - [ ] Manual: allowing an account persists across reloads
-- [ ] DB shows only `number_last4`, never full account numbers
+- [x] DB shows only `number_last4`, never full account numbers
 - [ ] API path prefix confirmed with a real call (no `/api/v1`), noted in `DECISIONS.md`
-- [ ] All tests pass
-- [ ] Commits: `feat(snaptrade): add api client with timeouts and 429 handling` · `feat(sync): sync connections and accounts into db` · `feat(web): list accounts and allow toggles on dashboard`
-- Notes:
+- [x] All tests pass
+- [x] Commits: `feat(snaptrade): add api client with timeouts and 429 handling` · `feat(sync): sync connections and accounts into db` · `feat(web): list accounts and allow toggles on dashboard`
+- Notes: Built 2026-10-04 and merged to main (CI run 37181379708 green). 167 tests pass. Automated equivalents pass against the fake SnapTrade: first sync stores accounts not allowed with last 4 digits only (a test asserts the full number appears nowhere in the rows or the page); allowing persists across reloads; 404 for another user's account; CSRF enforced; 429/5xx retry rules with fake timers. Migration 0002 makes raw_type and number_last4 nullable (name falls back). The real-call base-URL check and the manual browser checks wait for Aaryan (P5). See D16.
 
 ### PHASE 5 — Deploy Early + API Capability Spike (M2) [not started]
 
@@ -78,7 +79,7 @@ Last Updated: 2026-10-04
 - [ ] Spike results recorded for Q3, Q6, Q9, Q11 (including exact symbol format for TSX, e.g. `VFV.TO`)
 - [ ] Aaryan informed of results and any fallback chosen
 - [ ] Commits: `chore(deploy): configure render start with migrations` · `chore(snaptrade): add capability spike script` · `docs: record snaptrade capability spike results`
-- Notes:
+- Notes: Skipped in the 2026-10-04 autonomous build by agreement with Aaryan (needs Render, UptimeRobot, and real SnapTrade calls). P8+ were built on the documented response shapes; see D16 and later decisions marked "verify in P5".
 
 ### PHASE 6 — Token Lifecycle (M3) [not started]
 
