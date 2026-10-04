@@ -59,3 +59,12 @@ export function fmtMoney(value: string, currency: string): string {
   });
   return `${formatter.format(rounded)} ${currency}`;
 }
+
+// SnapTrade sends some prices as JSON numbers. Big reads a number through its shortest decimal
+// form (152.4 -> "152.4"), so this changes only the representation; no float maths happens.
+export function decimalFromNumber(value: number): string {
+  if (!Number.isFinite(value)) {
+    throw new Error('[Money] value is not a finite number');
+  }
+  return new Big(value).toFixed();
+}

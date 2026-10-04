@@ -93,6 +93,88 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const NOT_FOUND: FakeResponse = { status: 404, body: { detail: 'Account not found' } };
+
+// `/accounts/<id>/quotes` -> '<id>', if that account exists at the fake brokerage.
+function knownAccountId(fake: FakeSnapTrade, request: RecordedRequest): string | null {
+  const accountId = request.url.pathname.split('/')[2] ?? '';
+  return fake.brokerage.accounts.some((account) => account.id === accountId) ? accountId : null;
+}
+
+function searchSymbols(fake: FakeSnapTrade, request: RecordedRequest): FakeResponse {
+  const parsed: unknown = JSON.parse(request.body);
+  const substring =
+    typeof parsed === 'object' && parsed !== null && 'substring' in parsed
+      ? String(parsed.substring).toUpperCase()
+      : '';
+  const matches = fake.brokerage.symbols.filter(
+    (symbol) => symbol.symbol.includes(substring) || symbol.raw_symbol.includes(substring),
+  );
+  return { status: 200, body: matches.slice(0, 20) };
+}
+
+function quoteSymbols(fake: FakeSnapTrade, request: RecordedRequest): FakeResponse {
+  const ids = (request.url.searchParams.get('symbols') ?? '').split(',');
+  const quotes = ids.flatMap((id) => {
+    const quote = fake.brokerage.quotes[id];
+    const symbol = fake.brokerage.symbols.find((candidate) => candidate.id === id);
+    if (quote === undefined || symbol === undefined) {
+      return [];
+    }
+    return [
+      {
+        symbol,
+        last_trade_price: quote.last,
+        bid_price: quote.bid,
+        ask_price: quote.ask,
+        bid_size: 100,
+        ask_size: 100,
+      },
+    ];
+  });
+  return { status: 200, body: quotes };
+}
+
+// Positions, balances, symbol search, and quotes for the accounts in `fake.brokerage` (P8).
+function registerAccountDataRoutes(fake: FakeSnapTrade): void {
+  const forKnownAccount =
+    (handler: (accountId: string, request: RecordedRequest) => FakeResponse): ApiHandler =>
+    (request) => {
+      const accountId = knownAccountId(fake, request);
+      return accountId === null ? NOT_FOUND : handler(accountId, request);
+    };
+  fake.onApi(
+    'GET',
+    /^\/accounts\/[^/]+\/positions\/all$/,
+    forKnownAccount((accountId) => ({
+      status: 200,
+      body: { results: fake.brokerage.positions[accountId] ?? [] },
+    })),
+  );
+  fake.onApi(
+    'GET',
+    /^\/accounts\/[^/]+\/balances$/,
+    forKnownAccount((accountId) => ({
+      status: 200,
+      body: (fake.brokerage.balances[accountId] ?? []).map((balance) => ({
+        currency: { code: balance.currency, name: balance.currency },
+        cash: balance.cash,
+        buying_power: balance.buying_power,
+      })),
+    })),
+  );
+  fake.onApi(
+    'POST',
+    /^\/accounts\/[^/]+\/symbols$/,
+    forKnownAccount((_accountId, request) => searchSymbols(fake, request)),
+  );
+  fake.onApi(
+    'GET',
+    /^\/accounts\/[^/]+\/quotes$/,
+    forKnownAccount((_accountId, request) => quoteSymbols(fake, request)),
+  );
+}
+
 export async function createFakeSnapTrade(options: {
   clientId: string;
   clientSecret: string;
@@ -146,6 +228,7 @@ export async function createFakeSnapTrade(options: {
     body: fake.brokerage.connections,
   }));
   fake.onApi('GET', /^\/accounts$/, () => ({ status: 200, body: fake.brokerage.accounts }));
+  registerAccountDataRoutes(fake);
 
   function authorize(authorizeUrl: string, authorizeOptions: AuthorizeOptions = {}): string {
     const params = new URL(authorizeUrl).searchParams;

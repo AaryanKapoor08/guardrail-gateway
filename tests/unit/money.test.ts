@@ -3,6 +3,7 @@ import {
   add,
   cmp,
   dec,
+  decimalFromNumber,
   decimalPlaces,
   fmtMoney,
   isPositive,
@@ -66,5 +67,15 @@ describe('money helpers', () => {
   it('formats money for display with the currency code', () => {
     expect(fmtMoney('1234.5', 'USD')).toBe('$1,234.50 USD');
     expect(fmtMoney('99.999', 'CAD')).toBe('$100.00 CAD');
+  });
+
+  it('turns a JSON number into the same decimal string without float maths', () => {
+    expect(decimalFromNumber(152.4)).toBe('152.4');
+    expect(decimalFromNumber(0.1)).toBe('0.1');
+    expect(decimalFromNumber(90000)).toBe('90000');
+  });
+
+  it('refuses a number that is not finite', () => {
+    expect(() => decimalFromNumber(Number.NaN)).toThrow('[Money] value is not a finite number');
   });
 });

@@ -4,13 +4,20 @@ import type { Env } from './config/env.js';
 import { createDb, type Database } from './db/client.js';
 import { createLogger, type Logger } from './lib/logger.js';
 import { createTtlCache, type TtlCache } from './snaptrade/cache.js';
+import { POSITIONS_TTL_MS, QUOTE_TTL_MS, SYMBOL_SEARCH_TTL_MS } from './snaptrade/cached.js';
 import { METADATA_TTL_MS, type SnapTradeMetadata } from './snaptrade/discovery.js';
+import type { Balance, Positions, Quote, SymbolMatch } from './snaptrade/resources.js';
 import { ACCOUNT_SYNC_TTL_MS } from './snaptrade/sync.js';
 
 export type Caches = {
   readonly snaptradeMetadata: TtlCache<'metadata', SnapTradeMetadata>;
   // user id -> synced recently. Present means "connections and accounts are fresh enough".
   readonly accountSyncs: TtlCache<string, true>;
+  // Keys start with the user id (see snaptrade/cached.ts).
+  readonly positions: TtlCache<string, Positions>;
+  readonly balances: TtlCache<string, Balance[]>;
+  readonly symbolSearches: TtlCache<string, SymbolMatch[]>;
+  readonly quotes: TtlCache<string, Quote | null>;
 };
 
 // Returns the key set used to check SnapTrade's id_token signatures. Production downloads
@@ -34,6 +41,10 @@ export function createCaches(now: () => Date): Caches {
   return {
     snaptradeMetadata: createTtlCache({ ttlMs: METADATA_TTL_MS, now }),
     accountSyncs: createTtlCache({ ttlMs: ACCOUNT_SYNC_TTL_MS, now }),
+    positions: createTtlCache({ ttlMs: POSITIONS_TTL_MS, now }),
+    balances: createTtlCache({ ttlMs: POSITIONS_TTL_MS, now }),
+    symbolSearches: createTtlCache({ ttlMs: SYMBOL_SEARCH_TTL_MS, now }),
+    quotes: createTtlCache({ ttlMs: QUOTE_TTL_MS, now }),
   };
 }
 
