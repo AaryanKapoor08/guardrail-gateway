@@ -1,7 +1,14 @@
 import { lte } from 'drizzle-orm';
-import { loginAttempts, mcpAuthCodes, mcpAuthRequests, sessions } from '../db/schema.js';
+import {
+  loginAttempts,
+  mcpAuthCodes,
+  mcpAuthRequests,
+  sessions,
+  webhookEvents,
+} from '../db/schema.js';
 import type { Deps } from '../deps.js';
 import { expireDueForUser, findUsersWithDueIntents } from '../intents/expiry.js';
+import { processPending } from '../webhooks/processor.js';
 
 // The 60-second background job (V§12.5). Every task is idempotent and safe to run late or
 // twice, because a free Render instance can restart at any time.
@@ -10,8 +17,11 @@ export const SWEEP_INTERVAL_MS = 60_000;
 
 export type SweepSummary = {
   readonly expiredIntents: number;
+  readonly processedWebhooks: number;
   readonly purgedRows: number;
 };
+
+const WEBHOOK_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 async function expireIntents(deps: Deps): Promise<number> {
   let expired = 0;
@@ -23,10 +33,16 @@ async function expireIntents(deps: Deps): Promise<number> {
 }
 
 // Short-lived rows that are useless once expired: sessions (24h), login attempts (10 min),
-// pending MCP authorizations (10 min), and MCP authorization codes (60s).
+// pending MCP authorizations (10 min), MCP authorization codes (60s), and webhook events after
+// 30 days (V§12.5).
 async function purgeExpiredRows(deps: Deps): Promise<number> {
   const now = deps.now();
+  const webhookCutoff = new Date(now.getTime() - WEBHOOK_RETENTION_MS);
   const results = await Promise.all([
+    deps.db
+      .delete(webhookEvents)
+      .where(lte(webhookEvents.receivedAt, webhookCutoff))
+      .returning({ id: webhookEvents.webhookId }),
     deps.db.delete(sessions).where(lte(sessions.expiresAt, now)).returning({ id: sessions.idHash }),
     deps.db
       .delete(loginAttempts)
@@ -46,8 +62,10 @@ async function purgeExpiredRows(deps: Deps): Promise<number> {
 
 export async function runSweepOnce(deps: Deps): Promise<SweepSummary> {
   const expiredIntents = await expireIntents(deps);
+  // Retries webhook events that weren't processed right away (e.g. after a restart).
+  const processedWebhooks = await processPending(deps);
   const purgedRows = await purgeExpiredRows(deps);
-  return { expiredIntents, purgedRows };
+  return { expiredIntents, processedWebhooks, purgedRows };
 }
 
 export type Sweeper = { readonly stop: () => Promise<void> };

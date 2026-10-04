@@ -78,6 +78,7 @@ function accountRow(userId: string, account: SnapTradeAccount, brokerageName: st
     accountCategory: account.accountCategory,
     isPaper: account.isPaper,
     syncedAt: now,
+    firstSeenAt: now,
   };
 }
 

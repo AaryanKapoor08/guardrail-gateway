@@ -17,7 +17,26 @@ export type AccountListItem = {
   readonly present: boolean;
   readonly connectionDisabled: boolean;
   readonly connectionType: 'read' | 'trade';
+  readonly firstSeenAt: Date;
 };
+
+const NEW_ACCOUNT_NOTICE_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Accounts SnapTrade reported after the user's first sync (e.g. a NEW_ACCOUNT_AVAILABLE
+// webhook), within the last week, that the user hasn't allowed: worth a "new account" notice.
+export function newlyFoundAccounts(
+  accounts: readonly AccountListItem[],
+  now: Date,
+): AccountListItem[] {
+  const firstSyncMs = Math.min(...accounts.map((account) => account.firstSeenAt.getTime()));
+  return accounts.filter(
+    (account) =>
+      !account.allowed &&
+      account.present &&
+      account.firstSeenAt.getTime() > firstSyncMs &&
+      now.getTime() - account.firstSeenAt.getTime() < NEW_ACCOUNT_NOTICE_MS,
+  );
+}
 
 // Every account we've seen for the user, with its connection's health, in one query.
 export async function listUserAccounts(deps: Deps, userId: string): Promise<AccountListItem[]> {
@@ -34,6 +53,7 @@ export async function listUserAccounts(deps: Deps, userId: string): Promise<Acco
       present: accounts.present,
       connectionDisabled: connections.disabled,
       connectionType: connections.type,
+      firstSeenAt: accounts.firstSeenAt,
     })
     .from(accounts)
     .innerJoin(connections, eq(connections.id, accounts.connectionId))

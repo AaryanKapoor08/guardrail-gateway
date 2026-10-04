@@ -131,6 +131,8 @@ export const accounts = pgTable(
     allowed: boolean('allowed').notNull().default(false),
     present: boolean('present').notNull().default(true),
     syncedAt: timestamptz('synced_at').notNull(),
+    // When a sync first stored it; drives the "new account found" notice. Added in 0004 (D23).
+    firstSeenAt: timestamptz('first_seen_at').notNull().defaultNow(),
   },
   (table) => [
     unique('accounts_user_id_snaptrade_account_id_unique').on(

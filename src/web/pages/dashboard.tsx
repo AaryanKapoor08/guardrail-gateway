@@ -22,6 +22,7 @@ type DashboardProps = {
   readonly ordersAtBroker: readonly IntentView[];
   // Why live mode can't be switched on right now (empty when it can).
   readonly liveModeProblems: readonly string[];
+  readonly newAccounts: readonly AccountListItem[];
 };
 
 function KillSwitch(props: {
@@ -290,6 +291,13 @@ export function DashboardPage(props: DashboardProps) {
         <div class="banner danger">
           A brokerage connection is broken. Fix it in your SnapTrade dashboard; until then, orders
           for its accounts are refused.
+        </div>
+      ) : null}
+      {props.newAccounts.length > 0 ? (
+        <div class="banner">
+          New account found, not allowed yet:{' '}
+          {props.newAccounts.map((account) => account.name).join(', ')}. Allow it below if the AI
+          may use it.
         </div>
       ) : null}
       <section>

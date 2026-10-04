@@ -1,6 +1,6 @@
 import type { Context, Hono } from 'hono';
 import { z } from 'zod';
-import { listUserAccounts, setAccountAllowed } from '../accounts/service.js';
+import { listUserAccounts, newlyFoundAccounts, setAccountAllowed } from '../accounts/service.js';
 import { verifyCsrf } from '../auth/csrf.js';
 import { disconnectUser } from '../auth/disconnect.js';
 import { destroySession, loadSession, requireSession, type SignedInEnv } from '../auth/sessions.js';
@@ -58,6 +58,7 @@ async function showDashboard(deps: Deps, c: Context<SignedInEnv>): Promise<Respo
       paperPositions={paperPositions}
       ordersAtBroker={ordersAtBroker}
       liveModeProblems={liveModeProblems(deps, user, hasTradeScope)}
+      newAccounts={newlyFoundAccounts(accounts, deps.now())}
     />,
   );
 }

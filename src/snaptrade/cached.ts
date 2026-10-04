@@ -12,7 +12,7 @@ import {
 
 // SnapTrade reads through the short-lived caches of V§12.3, which protect the 10 requests per
 // minute per-account budget. Keys always start with the user id, so one user's entries can be
-// dropped together (webhooks, sign-out of a connection).
+// dropped together (webhooks).
 
 export const POSITIONS_TTL_MS = 60 * 1000;
 export const SYMBOL_SEARCH_TTL_MS = 24 * 60 * 60 * 1000;
@@ -68,11 +68,10 @@ export function cachedQuote(
   });
 }
 
-// Drops every cached SnapTrade read for the user (after a webhook says something changed).
-export function forgetUserData(deps: Deps, userId: string): void {
+// Drops the user's cached holdings and cash after SnapTrade says they changed
+// (ACCOUNT_HOLDINGS_UPDATED webhook), so the next read fetches fresh data.
+export function forgetHoldings(deps: Deps, userId: string): void {
   const isUsers = (key: string) => key.startsWith(`${userId}:`);
   deps.caches.positions.deleteWhere(isUsers);
   deps.caches.balances.deleteWhere(isUsers);
-  deps.caches.quotes.deleteWhere(isUsers);
-  deps.caches.accountSyncs.delete(userId);
 }
