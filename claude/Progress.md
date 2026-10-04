@@ -12,7 +12,7 @@ Last Updated: 2026-10-03
 
 - 2026-10-03: Planning complete. PRODUCT_VISION.md (final vision, cross-checked twice against live SnapTrade, Claude-connector, and MCP docs) and claude/BuildFlow.md written. Repo created and pushed. .env created locally (git-ignored) with TOKEN_ENCRYPTION_KEY pre-generated. Waiting on Phase 0 human tasks.
 - 2026-10-03: Env verified live. Neon OK (Postgres 17.11, pooled, us-east-1, transactions OK through pooler, sslmode switched to verify-full). SnapTrade discovery + JWKS OK. Client id+secret ACCEPTED by the token endpoint (wrong-secret control rejected with invalid_client). Consumer key set (50 chars), but it can only be verified with a real webhook (P12). Redirect URI registration is verified by the first real sign-in (P3). Still TODO at that point: Node 24, Docker.
-- 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Instant-demo phase (P14) added so anyone can test in < 2 minutes; free hosting (Render free + 5-min ping). Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
+- 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Instant-demo phase (P14) added so anyone can test in < 2 minutes; free hosting (Render free + 5-min ping). SnapTrade Personal has SnapTrade Sandbox (Active, read-only) + a real Wealthsimple connection (read-only; keep it NOT allowed in our app during development; useful for Q6 raw_type in the P5 spike). Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
 
 ---
 
@@ -24,7 +24,7 @@ Last Updated: 2026-10-03
 - [x] `docker info` succeeds
 - [x] SnapTrade Test OAuth app exists with the localhost redirect URI; client id + secret saved in `.env`
 - [x] Consumer key saved in `.env`
-- [ ] SnapTrade Personal test workspace has the Sandbox brokerage connected
+- [x] SnapTrade Personal test workspace has the Sandbox brokerage connected
 - [x] Neon pooled `DATABASE_URL` saved in `.env`
 - [ ] Render account (free) exists and is linked to GitHub; UptimeRobot account (free) created
 - Notes:
