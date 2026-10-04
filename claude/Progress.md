@@ -12,7 +12,7 @@ Last Updated: 2026-10-03
 
 - 2026-10-03: Planning complete. PRODUCT_VISION.md (final vision, cross-checked twice against live SnapTrade, Claude-connector, and MCP docs) and claude/BuildFlow.md written. Repo created and pushed. .env created locally (git-ignored) with TOKEN_ENCRYPTION_KEY pre-generated. Waiting on Phase 0 human tasks.
 - 2026-10-03: Env verified live. Neon OK (Postgres 17.11, pooled, us-east-1, transactions OK through pooler, sslmode switched to verify-full). SnapTrade discovery + JWKS OK. Client id+secret ACCEPTED by the token endpoint (wrong-secret control rejected with invalid_client). Consumer key set (50 chars), but it can only be verified with a real webhook (P12). Redirect URI registration is verified by the first real sign-in (P3). Still TODO at that point: Node 24, Docker.
-- 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
+- 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Instant-demo phase (P14) added so anyone can test in < 2 minutes; free hosting (Render free + 5-min ping). Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
 
 ---
 
@@ -147,7 +147,15 @@ Last Updated: 2026-10-03
 - [ ] Commits: `feat(live): place orders via snaptrade with client order id` · `feat(live): track submitted orders and reconcile unknown` · `feat(approvals): show brokerage preview in live mode` · `test(live): cover outcomes gates and no-retry rule`
 - Notes:
 
-### PHASE 14 — Submission Polish (M10) [not started]
+### PHASE 14 — The 2-Minute Test: Instant Demo (M10a) [not started]
+
+- [ ] All demo tests pass (including "no SnapTrade calls for demo users")
+- [ ] **Stopwatch test on the deployed URL** by someone who has never seen the app: landing → demo → rejected → approved → filled → audit log in **< 2 minutes**, no typing
+- [ ] Claude connects to a demo account (sign-in page → "Try the demo") and proposes an order
+- [ ] Commits: `feat(demo): add built-in demo brokerage data` · `feat(demo): add instant demo accounts with 24h cleanup` · `feat(web): add guided try page and manual proposal form` · `test(demo): cover demo isolation guided steps and cleanup`
+- Notes:
+
+### PHASE 15 — Submission Polish (M10) [not started]
 
 - [ ] README lets a stranger understand the project without other files
 - [ ] V§19.2 manual checklist fully ticked on production

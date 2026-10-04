@@ -53,6 +53,7 @@ The original brief was strong. These are the corrections (things that were wrong
 | G18 | No way for the user to see or revoke which AI apps are connected | "Connected AI apps" panel with a revoke button (§6.6). |
 | G19 | Requesting the `trade` scope before SnapTrade enables it makes the authorization request fail | The `trade` scope is controlled by a config flag, off by default (§4.1). |
 | G20 | No CI | GitHub Actions runs typecheck and tests on every push (§15). |
+| G21 | A reviewer couldn't realistically try it in 2 minutes: test OAuth apps allow only **5 users**, trying it needs a SnapTrade Personal account **and** a Claude connector set up | **Instant demo:** one click, no sign-up, a 24-hour demo account with clearly labelled fake brokerage data, and a guided page of ready-made buttons (propose too big → rejected, propose OK → approve → filled → audit log). It runs the **same** policy engine, approval page, and paper executor as real users. Target: landing page to a filled order and audit log in **under 2 minutes** without typing anything (§4.7). Claude can connect to a demo account too. |
 
 ---
 
@@ -100,7 +101,7 @@ We do **not** compete with SnapTrade's read connector. Our value is the enforced
 
 **Secondary audience (the real one for v1):** SnapTrade engineers reviewing the project. They need to:
 1. understand it in 60 seconds (README plus demo video),
-2. try it (test OAuth apps are capped at **5 users**, so we keep slots free for reviewers),
+2. **try it in under 2 minutes without sweating**: one click on "Try the demo", no sign-up, no SnapTrade or Claude setup required (§4.7). Real sign-in remains one click away for anyone with SnapTrade Personal (test apps are capped at **5 users**, so we keep slots free for reviewers),
 3. read code that is obviously correct.
 
 ---
@@ -163,6 +164,32 @@ We do **not** compete with SnapTrade's read connector. Our value is the enforced
 - **Revoke an AI app:** in "Connected AI apps", revoking one MCP grant kills its access and refresh tokens immediately.
 - **Disconnect SnapTrade:** revoke the refresh token at SnapTrade's revocation endpoint (`token_type_hint=refresh_token`), revoke all our MCP tokens for the user, delete the stored SnapTrade tokens, and cancel pending intents. History stays, and the user can sign in again later.
 - **Delete account:** everything in Disconnect, then delete every row for the user, including the audit log (the only time audit rows are deleted, §14.3). If SnapTrade revocation fails, we still delete locally and tell the user to also remove the app in their SnapTrade dashboard.
+
+### 4.7 Flow G: the 2-minute test (instant demo + "Try it without an AI")
+
+**Goal:** someone who has never seen the app goes from the landing page to *a rejected order, an approved and filled order, and the audit log* in **under 2 minutes, without typing anything and without any account**.
+
+**Landing page** has two equal buttons: **"Try the demo (no sign-up, ~1 minute)"** and **"Sign in with SnapTrade"**. The sign-in page that Claude's connector opens shows the same two choices.
+
+**Demo account (`POST /demo/start`):**
+- Creates a user with `is_demo = true` (`snaptrade_sub = "demo:<uuid>"`), a default policy, and a session. Then it redirects to the guided page `/try`.
+- **Data comes from a built-in demo brokerage**, not SnapTrade: static, clearly fake data labelled **"DEMO DATA, not a real brokerage"** on every page. Two accounts: **Demo TFSA (CAD)**, *pre-allowed*, holding 2 × VFV.TO and 3 × XEQT.TO; and **Demo Individual (USD)**, *not allowed* (shows the allow-list idea). Searchable symbols: VFV.TO and XEQT.TO (ETF, CAD), SHOP.TO (stock, CAD), AAPL (stock, USD), VOO (ETF, USD), BTC (crypto). Fixed prices (e.g. VFV.TO $152.40 CAD).
+- Everything else is the **real code path**: same `proposeOrder`, policy engine, approval page (session + POST + CSRF), paper executor, audit log, kill switch, MCP tools.
+- **Paper mode only** (the `mode_allowed` rule refuses live for demo users). No SnapTrade calls, no email, no webhooks.
+- **Auto-deleted 24 hours after creation** by the sweeper (same deletion path as "Delete account").
+- Abuse limits: 5 demo starts per IP per hour, at most 300 active demo users (beyond that: "The demo is busy, try again soon or sign in with SnapTrade").
+
+**Guided page `/try`** (also linked from every demo page). Each step is one button that runs a ready-made proposal through the real `proposeOrder` path (recorded as actor `user`, detail `guided demo`, never as `ai`):
+1. **"Ask for something too big"**: BUY 10 × VFV.TO (market) → `POLICY_REJECTED`, showing *"Order value $1,524.00 CAD exceeds your per-order limit of $100.00 CAD"* and the daily-limit failure.
+2. **"Ask for something not allowed"**: BUY 1 × BTC → rejected by `asset_type_allowed` (*"Crypto isn't allowed; only stocks and ETFs"*).
+3. **"Ask for something allowed"**: BUY 0.5 × VFV.TO (market, ≈ $76.20) → `PENDING_APPROVAL`, with a button straight to the real approval page.
+4. On the approval page: **Approve** → `FILLED` → back to `/try`, showing the new paper position.
+5. **"See what happened"**: the audit log, every step with its actor and reason.
+6. Optional: **"Hit the kill switch"** and **"Connect Claude to this demo"** (MCP URL + 3 steps; the demo account can consent).
+
+**"Try it without an AI"** (available to demo *and* real users on the dashboard): a small form (account, symbol, buy/sell, quantity, market/limit, limit price) that submits a proposal through the same path, recorded as actor `user` with detail `manual test`. Useful to anyone who hasn't set up Claude yet. It still needs approval like any proposal.
+
+**Why this is safe and honest:** demo data is fake and labelled everywhere; demo users are isolated by `user_id` like all users; nothing reaches a real broker; the data expires in 24 hours. The real SnapTrade OAuth integration is still the main product, and the demo shows the guardrails to people who can't or won't sign in.
 
 ---
 
@@ -315,7 +342,7 @@ interface Executor {
 
 ### 6.6 Dashboard sections
 
-Accounts (allow / disallow) · Policy editor · Pending approvals · Intent history · Audit log · Connected AI apps (revoke) · Kill switch · Mode (paper/live, live disabled unless every gate passes, §10.3) · Disconnect · Delete account · Privacy · "Not financial advice" notice on every page.
+Accounts (allow / disallow) · "Try it without an AI" form · Policy editor · Pending approvals · Intent history · Audit log · Connected AI apps (revoke) · Kill switch · Mode (paper/live, live disabled unless every gate passes, §10.3) · Disconnect · Delete account · Privacy · "Not financial advice" notice on every page.
 
 ---
 
@@ -390,7 +417,7 @@ All rules are evaluated, with no short-circuit, so the AI and the user see **eve
 | 1 | `kill_switch_off` | off | The kill switch is off. |
 | 2 | `connection_healthy` | n/a | The account's connection is not disabled (from our last sync; see §12.3 for freshness). |
 | 3 | `account_allowed` | none allowed | The account is explicitly allowed by the user and still exists at SnapTrade. |
-| 4 | `mode_allowed` | paper | Paper always passes. Live requires every gate in §10.3. The intent's mode must equal the user's current mode (checked at approval). |
+| 4 | `mode_allowed` | paper | Paper always passes. Live requires every gate in §10.3, and is always refused for demo users (§4.7). The intent's mode must equal the user's current mode (checked at approval). |
 | 5 | `side_allowed` | buy only | The side is in the allowed sides (user can enable sell). |
 | 6 | `no_short_selling` | always on | For sells: quantity ≤ held quantity − quantity in other **open** sell intents for that symbol and account. *Open* = `PENDING_APPROVAL`, `APPROVED`, `EXECUTING`, `SUBMITTED`, `UNKNOWN` (filled sells already show in positions, so they're excluded to avoid subtracting twice). In paper mode, held quantity = real position + paper ledger position. |
 | 7 | `asset_type_allowed` | stocks + ETFs | The resolved security type code is `cs` or `et`. Options, crypto, funds, warrants, etc. are rejected. |
@@ -631,7 +658,7 @@ In-process caches (valid because there is one instance):
 
 - `GET /health`: process up and `SELECT 1` succeeds. Used by Render's health check.
 - **Graceful shutdown on SIGTERM** (Render deploys): stop accepting requests, let in-flight ones finish (up to 10 seconds), close the DB pool.
-- **Sweeper (every 60 seconds):** expire intents, process unprocessed webhooks, track live orders, move stuck live `EXECUTING` to `UNKNOWN`, and purge expired sessions, login attempts, auth codes, and webhook rows older than 30 days. Each task is idempotent and safe to run late or twice.
+- **Sweeper (every 60 seconds):** expire intents, process unprocessed webhooks, track live orders, move stuck live `EXECUTING` to `UNKNOWN`, delete demo users older than 24 hours (same transaction path as "Delete account"), and purge expired sessions, login attempts, auth codes, and webhook rows older than 30 days. Each task is idempotent and safe to run late or twice.
 
 ---
 
@@ -653,6 +680,7 @@ In-process caches (valid because there is one instance):
 | Prompt injection | Assume anything the AI sends may be manipulated by content it read. Defences: (1) the human approval step, showing **our** stored and resolved data rather than AI-written text (no free-text AI fields in v1); (2) the AI has no tool that can approve or loosen rules; (3) server-side limits; (4) proposal rate limits stop approval-spam. |
 | MCP OAuth | Client host allowlist, exact redirect match, PKCE required, `resource` bound into tokens, short-lived single-use codes, refresh rotation with reuse detection, consent screen naming the client host and redirect host. |
 | Rate limits | Per-user MCP limits (§11.1). Per-IP limits on `/oauth/*` and login (e.g. 30/min). **Not on webhooks:** SnapTrade sends from shared IPs in bursts, and the signature check plus 64 KB body cap protect that route. In-memory, single instance, documented. |
+| Demo accounts | No SnapTrade access, paper only, fake data labelled on every page, isolated by `user_id`, deleted after 24 hours, 5 starts per IP per hour, ≤ 300 active. `POST /demo/start` is protected by the Origin check (Hono `csrf()`), since there's no session yet. |
 | Live trading | Off by default at server level. Paper-accounts-only by default. Per-user explicit switch. Re-checked at approval. |
 | Audit integrity | Postgres trigger blocks `UPDATE` on `audit_events`, and blocks `DELETE` unless the transaction is deleting that user's account (§14.3). |
 | Account deletion | User can delete account and all data from the UI (typed confirmation + POST + CSRF). |
@@ -668,9 +696,10 @@ Conventions: `uuid` primary keys (random), `timestamptz` everywhere, money and q
 
 ```
 users
-  id uuid pk · snaptrade_sub text unique not null · email text null · email_verified bool
-  kill_switch bool default false · mode text check in ('paper','live') default 'paper'
+  id uuid pk · snaptrade_sub text unique not null ('demo:<uuid>' for demo users) · email text null · email_verified bool
+  is_demo bool default false · kill_switch bool default false · mode text check in ('paper','live') default 'paper'
   needs_reauth bool default false · created_at · updated_at
+  index(is_demo, created_at)  -- sweeper finds expired demo users
 
 sessions
   id_hash text pk · user_id fk · csrf_token text · created_at · expires_at
@@ -901,6 +930,7 @@ Each milestone ends with its **check passing** and a **plain-English summary for
 | **M7** | **Dashboard polish:** policy editor, allowed accounts, intent history, audit log view, kill switch, connected apps, mode display, disconnect, delete account, privacy page, disclaimers. | Every setting demonstrably changes behaviour (manual checklist + integration tests). Account deletion leaves zero rows for that user. |
 | **M8** | **Webhooks:** receiver with signature check, dedupe, freshness flag, async processing, connection banner, account changes. | Signed fixture accepted; unsigned or tampered → 401; duplicate ignored; stale flagged; `CONNECTION_BROKEN` blocks proposals for that connection; a real Sandbox webhook (via tunnel or deployed URL) verifies. |
 | **M9** | **Live executor** (*only if SnapTrade enables `trade`*): gates (§10.3), place, `UNKNOWN` handling, tracking, impact preview on approval page. | Tested **only** on an `is_paper=true` brokerage account through SnapTrade. Order reaches `SUBMITTED` then `FILLED`/`CLOSED`. Simulated timeout → `UNKNOWN` → reconciled. **Never real money.** |
+| **M10a** | **2-minute test:** instant demo account with the built-in demo brokerage, guided `/try` page, "Try it without an AI" form, demo choice on the sign-in page, 24-hour cleanup (§4.7). | **Stopwatch test:** someone new reaches rejected → approved → filled → audit log in **< 2 minutes** with no typing. Demo users can't reach SnapTrade or live mode (tests). Expired demo users are fully deleted (test). |
 | **M10** | **Submission polish:** README (what, why, try it in 60 seconds, architecture, tradeoffs, known limits), `DECISIONS.md`, `API_FEEDBACK.md`, `THREAT_MODEL.md`, 2–3 minute demo video + script, switch Render to the always-on plan. | A stranger can understand the project from the README alone. Fresh sign-up works on the public URL. Test-app user slots available for reviewers. |
 
 **If M9 is not unlocked** (trade scope not granted), v1 ships as paper-only. That is a complete product, and the README explains that the live executor is designed, gated, and waiting for SnapTrade's `trade` beta.
@@ -943,6 +973,8 @@ Each milestone ends with its **check passing** and a **plain-English summary for
 13. Claude Code connect (loopback redirect).
 14. Kill switch while an approval page is open: approving fails cleanly.
 15. Approval link opened in a logged-out browser does nothing until sign-in.
+16. **2-minute stopwatch test** on the deployed URL, by someone who has never seen the app: landing → demo → rejected → approved → filled → audit log in under 2 minutes, no typing, no account.
+17. Claude connects to a **demo** account (sign-in page → "Use a demo account") and can propose an order.
 
 ---
 
@@ -995,7 +1027,8 @@ When we hit one, **stop**, write what we found in `DECISIONS.md`, and tell Aarya
 10. **Paper default + live gates enforced in code:** "never test on real money" is a config check, not a promise.
 11. **Single currency and no FX:** refusing beats guessing with someone's money.
 12. **$0 hosting that still meets Claude's 10-second OAuth timeout:** Render free + a 5-minute uptime ping, with the free-hours maths (750 ≥ 744) and the restart-safe design as the justification.
-13. **What I'd do next:** cancel-at-broker, per-currency limits with an FX source, a read-only grant option on the consent screen, TRADE_UPDATE webhook (beta) instead of polling, multi-instance (move caches and rate limits to Postgres or Redis), passkey step-up for live approvals.
+13. **Customer thinking for the reviewer:** a 5-user test cap and multi-account setup would stop most people from ever trying it, so the instant demo runs the real guardrail code on labelled fake data and gets anyone to a filled order in under 2 minutes.
+14. **What I'd do next:** cancel-at-broker, per-currency limits with an FX source, a read-only grant option on the consent screen, TRADE_UPDATE webhook (beta) instead of polling, multi-instance (move caches and rate limits to Postgres or Redis), passkey step-up for live approvals.
 
 ---
 

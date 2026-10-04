@@ -8,6 +8,7 @@ Guardrail Gateway is a server-side safety layer between AI assistants (Claude, v
 
 - **The AI proposes. Your rules and your approval decide.** The AI has no tool that can approve orders, change limits, or turn off the kill switch.
 - Built as a SnapTrade OAuth app (Sign in with SnapTrade).
+- **Try it in 2 minutes:** one-click demo, no sign-up (link added at deploy).
 
 ## Documents
 

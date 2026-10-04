@@ -5,7 +5,7 @@ A phase is done when its checkpoint passes, not when the code is written.
 **Source of truth for *what* and *why*:** `PRODUCT_VISION.md` (cited below as `V§n`).
 **This file is the source of truth for *how* and *in what order*.** If the two ever disagree, stop and fix the docs before writing code.
 
-Phase ↔ milestone map: P0 prerequisites · P1–P2 = M0 · P3–P4 = M1 · P5 = M2 · P6 = M3 · P7 = M4 · P8 = M5 · P9–P10 = M6 · P11 = M7 · P12 = M8 · P13 = M9 · P14 = M10.
+Phase ↔ milestone map: P0 prerequisites · P1–P2 = M0 · P3–P4 = M1 · P5 = M2 · P6 = M3 · P7 = M4 · P8 = M5 · P9–P10 = M6 · P11 = M7 · P12 = M8 · P13 = M9 · P14 = M10a (2-minute test) · P15 = M10.
 
 ---
 
@@ -695,7 +695,7 @@ npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/b
 
 ## PHASE 13 — Live Executor (M9) — ⛔ only if SnapTrade enabled `trade`
 
-**Precondition gate:** SnapTrade confirmed `trade` for the Test app **and** a trade-enabled connection with an `is_paper=true` account exists (V§21 Q1, Q2). If not, **skip to P14** and keep live gated off. That's a complete v1.
+**Precondition gate:** SnapTrade confirmed `trade` for the Test app **and** a trade-enabled connection with an `is_paper=true` account exists (V§21 Q1, Q2). If not, **skip to P14** (the 2-minute test, then P15) and keep live gated off. That's a complete v1.
 
 **Tasks:**
 1. Set `SNAPTRADE_REQUEST_TRADE_SCOPE=true`. The user re-authorizes (scopes are per grant). Persisted `scope` contains `trade`.
@@ -717,12 +717,36 @@ npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/b
 
 ---
 
-## PHASE 14 — Submission Polish (M10)
+## PHASE 14 — The 2-Minute Test: Instant Demo (M10a)
+
+**Goal:** anyone reaches *rejected → approved → filled → audit log* in **under 2 minutes**, with no account and no typing (V§4.7).
+
+**Tasks:**
+1. Schema: `users.is_demo` (+ index `(is_demo, created_at)`) via a new migration.
+2. `src/demo/demo-brokerage.ts`: a pure function `handleDemoRequest({ method, path, query, body })` → JSON matching the **real** SnapTrade shapes from the P5 spike, for `/authorizations`, `/accounts`, `/accounts/{id}/positions/all`, `/balances`, `/symbols`, `/quotes`. Data exactly as V§4.7 (Demo TFSA CAD pre-allowed with 2 × VFV.TO + 3 × XEQT.TO; Demo Individual USD not allowed; symbols VFV.TO, XEQT.TO, SHOP.TO, AAPL, VOO, BTC; fixed prices, VFV.TO = 152.40 CAD). Unknown paths → 404.
+3. `snaptradeFetch`: if the user `is_demo`, call `handleDemoRequest` instead of the network (no token). **Responses still go through the same Zod parsing**, so demo data can't drift from the real shape. `/trade/*` is never routed for demo users.
+4. `mode_allowed`: demo users → live always fails ("Live mode isn't available in the demo").
+5. `POST /demo/start` (Origin check, per-IP 5/hour, global cap 300 active): create the user (`snaptrade_sub = 'demo:' + uuid`), default policy, sync demo accounts, allow Demo TFSA, create a session, redirect to `/try`. Audit `demo.started`.
+6. Landing page + the sign-in page used by Claude's connector: two equal buttons, **"Try the demo (no sign-up, ~1 minute)"** and **"Sign in with SnapTrade"**. Banner **"DEMO DATA, not a real brokerage"** on every page for demo users.
+7. `GET /try` + `POST /try/:step` (CSRF): the 6 guided steps of V§4.7, each one button calling the real `proposeOrder` with actor `user`, detail `guided demo`. After a proposal, the page shows the result and reasons, plus a "Review and approve" button for pending ones. A progress checklist on the page shows which steps are done.
+8. **"Try it without an AI"** form on the dashboard (all users): account, symbol, side, quantity, type, limit price → `proposeOrder` (actor `user`, detail `manual test`).
+9. Sweeper: delete demo users older than 24h, using the same path as "Delete account" (audit-guard setting, cascade).
+10. Tests (`integration/demo.test.ts`): demo start creates an isolated user with fake accounts; **the fake SnapTrade `fetch` is never called for demo users** (call counter = 0); each guided step gives the expected status and reasons (too big → 2 failures; BTC → asset type; 0.5 VFV.TO → pending → approve → `FILLED`); live mode refused; per-IP limit and global cap enforced; a 24h-old demo user is fully deleted; demo data parses with the real Zod schemas.
+
+**Checkpoint:**
+- [ ] All demo tests pass (including "no SnapTrade calls for demo users")
+- [ ] **Stopwatch test on the deployed URL** by someone who has never seen the app: landing → demo → rejected → approved → filled → audit log in **< 2 minutes**, no typing
+- [ ] Claude connects to a demo account (sign-in page → "Try the demo") and proposes an order
+- [ ] Commits: `feat(demo): add built-in demo brokerage data` · `feat(demo): add instant demo accounts with 24h cleanup` · `feat(web): add guided try page and manual proposal form` · `test(demo): cover demo isolation guided steps and cleanup`
+
+---
+
+## PHASE 15 — Submission Polish (M10)
 
 **Goal:** a stranger understands, trusts, and can try the project in 60 seconds. Every decision is documented.
 
 **Tasks:**
-1. `README.md`: one-paragraph pitch · 60-second try-it (connector URL + steps, or watch the demo video) · architecture diagram (V§6.1) · two OAuth relationships · guardrail list · tradeoffs (V§22) · known limits (paper-only if P13 skipped, single instance, no FX, no broker cancel, Render cold start only on free) · local setup (`.env.example`, Docker test DB, `npm test`) · "Not financial advice."
+1. `README.md`: one-paragraph pitch · **"Try it in 2 minutes"** link to the instant demo at the very top · connector URL + steps · demo video · architecture diagram (V§6.1) · two OAuth relationships · guardrail list · tradeoffs (V§22) · known limits (paper-only if P13 skipped, single instance, no FX, no broker cancel, Render cold start only on free) · local setup (`.env.example`, Docker test DB, `npm test`) · "Not financial advice."
 2. `DECISIONS.md` complete (every V§0 item + anything decided during the build).
 3. `API_FEEDBACK.md` complete (every SnapTrade surprise + workaround), written as constructive feedback to SnapTrade.
 4. `THREAT_MODEL.md`: assets, attackers (malicious content → prompt injection, stolen MCP token, phishing client, webhook forger, CSRF/clickjacking, insider DB read), mitigations → V§13.
@@ -764,7 +788,8 @@ Pass 1: every V§ requirement → mapped to the phase that builds it and the tes
 | Live: gates, place once, UNKNOWN, tracking, impact preview | P13 | live tests (conditional) ⛔ |
 | Secure headers / clickjacking (G12) | P3 | header assertions in `oidc-login.test.ts` |
 | $0 always-awake hosting (Render free + 5-min ping) before Claude testing (C6) | P5, P10 | monitor + timed curl checkpoint |
-| Docs, threat model, demo | P14 | checkpoint |
+| 2-minute test: instant demo, guided page, manual form, cleanup (G21) | P14 | `demo.test.ts` + stopwatch ⛔ |
+| Docs, threat model, demo video | P15 | checkpoint |
 
 Pass 2: ordering dependencies (each phase only uses what earlier phases built):
 - P3 needs P2 (crypto, sessions table). P4 needs P3 (signed-in user, tokens). P6 changes `getAccessToken` used since P4 (same signature, so no callers change).
@@ -772,5 +797,5 @@ Pass 2: ordering dependencies (each phase only uses what earlier phases built):
 - P7 is pure and depends on nothing but `lib/money` (P2).
 - P8 needs P4 (accounts), P6 (tokens), P7 (engine). P5's spike results must be applied before P8 (⛔).
 - P9 needs P3 (sessions/login), with the login route extended for `mcp_request`. P10 needs P8 + P9.
-- P11 needs P8–P10 (it edits what they read). P12 needs P4 sync. P13 needs P8 + P12 sweeper patterns.
+- P11 needs P8–P10 (it edits what they read). P12 needs P4 sync. P13 needs P8 + P12 sweeper patterns. P14 needs P8 (propose/approve), P10 (Claude path), and P11 (deletion path reused for cleanup).
 - No phase installs a dependency before it is needed. Every dependency is in the V§15 table (+ dev tooling: `@types/*`, `@vitest/coverage-v8`, `@modelcontextprotocol/client` for tests).
