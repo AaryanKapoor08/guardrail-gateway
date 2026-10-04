@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 3 — Sign in with SnapTrade (M1, part 1)**
+**Current Phase: PHASE 4 — Accounts Sync + Dashboard (M1, part 2)**
 
 Last Updated: 2026-10-04
 
@@ -14,6 +14,7 @@ Last Updated: 2026-10-04
 - 2026-10-03: Env verified live. Neon OK (Postgres 17.11, pooled, us-east-1, transactions OK through pooler, sslmode switched to verify-full). SnapTrade discovery + JWKS OK. Client id+secret ACCEPTED by the token endpoint (wrong-secret control rejected with invalid_client). Consumer key set (50 chars), but it can only be verified with a real webhook (P12). Redirect URI registration is verified by the first real sign-in (P3). Still TODO at that point: Node 24, Docker.
 - 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Instant-demo phase (P14) added so anyone can test in < 2 minutes; free hosting (Render free + 5-min ping). SnapTrade Personal has SnapTrade Sandbox (Active, read-only) + a real Wealthsimple connection (read-only; keep it NOT allowed in our app during development; useful for Q6 raw_type in the P5 spike). Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
 - 2026-10-04 (overnight autonomous build, batch 1): PHASE 1 + PHASE 2 complete and fast-forward merged to main; CI green on both branches and on main. Hono + TypeScript 7.0.2 + Biome 2.5 scaffold, Zod env validation (fails fast, names only), `/health` with DB check, graceful shutdown, GitHub Actions CI. Full V§14.1 schema (17 tables, incl. `users.is_demo` + `(is_demo, created_at)` index) migrated to Neon and the Docker test DB; append-only audit trigger (V§14.3 verbatim); AES-256-GCM field encryption, PKCE, sha256/random tokens, money (big.js), typed errors, Toronto time display, `writeAudit`. 82 tests passing in 8 files. Decisions D13 + D14 in DECISIONS.md. Next: PHASE 3 on branch `feat/p3-…`.
+- 2026-10-04 (single-agent build): PHASE 3 complete in code and merged to main (CI green). Sign in with SnapTrade (OIDC + PKCE + state + nonce, discovery with 24h cache, id_token checks with an injected key source), hashed DB sessions with fixation protection, per-session CSRF tokens plus an Origin check against APP_BASE_URL, security headers, home/dashboard/error pages, strict default policy schema. Fake SnapTrade (RS256 keys, token endpoint with rotation and counters, revocation, data API hooks) and test app helpers added. 142 tests. Human checks pending: real browser sign-in, Deny once, check ciphertext in Neon, check dev logs. Decision D15. Next: PHASE 4.
 
 ---
 
@@ -49,15 +50,15 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(db): add full schema and initial migration` · `feat(audit): enforce append-only audit log with trigger` · `feat(crypto): add aes-gcm field encryption and token helpers` · `feat(db): add decimal money helpers`
 - Notes: Verified 2026-10-04. Both migrations (`0000_initial_schema`, `0001_audit_guard`) applied to Neon **through the pooler** (no direct URL needed) and to the test DB; a second run applies 0. `\dt` on the test DB, a Neon table listing, and an `information_schema` test all show the 17 tables. Includes `users.is_demo` + index `(is_demo, created_at)` for P14. Extra tests beyond the list: deleting a user empties every table (FK design check), check constraints reject unknown values, the audit-deletion setting is transaction-local. `writeAudit` takes a required `createdAt` (injected clock); the app will set the deletion flag with `set_config('app.deleting_user', $id, true)` (same as `SET LOCAL`, but parameterised). Extra commits: `feat(config): add typed app errors and toronto time display`, `docs: record phase 1 and 2 build decisions`. CI run 37179923323 green. See D14.
 
-### PHASE 3 — Sign in with SnapTrade (M1, part 1) [not started]
+### PHASE 3 — Sign in with SnapTrade (M1, part 1) [in progress — human checks pending]
 
-- [ ] All OIDC integration tests pass
+- [x] All OIDC integration tests pass
 - [ ] **Manual:** `npm run dev`, then sign in at `http://localhost:3000` with the SnapTrade Personal test user → dashboard shows your email
 - [ ] Manual: click Deny on the SnapTrade consent screen → friendly declined page
 - [ ] Manual: `SELECT access_token_enc FROM snaptrade_grants` shows `v1:…` ciphertext, not a token
 - [ ] Logs contain no tokens or codes (search the dev console output)
-- [ ] Commits: `feat(policy): add policy schema with strict defaults` · `feat(snaptrade): discover oauth and oidc metadata` · `feat(oidc): sign in with snaptrade using pkce state and nonce` · `feat(auth): add hashed db sessions and csrf protection` · `test(oidc): cover login success and failure paths`
-- Notes:
+- [x] Commits: `feat(policy): add policy schema with strict defaults` · `feat(snaptrade): discover oauth and oidc metadata` · `feat(oidc): sign in with snaptrade using pkce state and nonce` · `feat(auth): add hashed db sessions and csrf protection` · `test(oidc): cover login success and failure paths`
+- Notes: Built 2026-10-04 and merged to main (CI run 37181007658 green). 142 tests pass. Automated equivalents of the manual items pass against the fake SnapTrade: tokens stored as `v1:` ciphertext that decrypts to the fake's issued tokens; declined consent page stores nothing; a test captures every log line and asserts no code, state, or token appears. The manual items need Aaryan's real browser sign-in. Extra commits: `refactor(db): share order constants with the policy module`, `docs: record phase 3 sign-in decisions`. TTL cache pulled forward from P4. See D15.
 
 ### PHASE 4 — Accounts Sync + Dashboard (M1, part 2) [not started]
 
