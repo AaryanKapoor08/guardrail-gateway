@@ -193,11 +193,17 @@ function excluding(excludeIntentId: string | undefined): SQL | undefined {
   return excludeIntentId === undefined ? undefined : ne(orderIntents.id, excludeIntentId);
 }
 
+export type TodayTotals = { readonly value: string; readonly orders: number };
+
 // "Today" is the calendar day in Toronto, compared against the injected clock, never SQL now()
-// (V§8.3). Pending intents count, so they reserve budget.
-async function countToday(tx: Transaction, request: CountRequest) {
+// (V§8.3). Pending intents count, so they reserve budget. Also used by get_policy to report
+// what is left of today's limits.
+export async function countToday(
+  db: DatabaseExecutor,
+  request: Pick<CountRequest, 'userId' | 'now' | 'policyCurrency' | 'excludeIntentId'>,
+): Promise<TodayTotals> {
   const nowIso = request.now.toISOString();
-  const [row] = await tx
+  const [row] = await db
     .select({
       value: sql<string>`coalesce(sum(${orderIntents.estValue}) filter (where ${orderIntents.currency} = ${request.policyCurrency}), 0)::text`,
       orders: sql<number>`count(*)::int`,

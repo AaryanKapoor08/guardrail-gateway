@@ -39,3 +39,8 @@ export class ValidationError extends Error {
     super(message, options);
   }
 }
+
+// What the AI and the approval page say when SnapTrade needs the user to sign in again (V§11.2).
+export function reconnectMessage(appBaseUrl: string): string {
+  return `Your SnapTrade connection needs to be renewed. Sign in at ${appBaseUrl}.`;
+}

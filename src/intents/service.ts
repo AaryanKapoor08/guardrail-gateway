@@ -5,7 +5,7 @@ import type { Transaction } from '../db/client.js';
 import { type LockedUser, lockExistingUser } from '../db/locks.js';
 import { orderIntents, users } from '../db/schema.js';
 import type { Deps } from '../deps.js';
-import { ConflictError, NeedsReauthError, NotFoundError } from '../lib/errors.js';
+import { ConflictError, NeedsReauthError, NotFoundError, reconnectMessage } from '../lib/errors.js';
 import { type Evaluation, evaluate } from '../policy/evaluate.js';
 import type { OrderRequest } from '../policy/types.js';
 import { loadPolicy } from '../settings/policy-store.js';
@@ -52,7 +52,7 @@ export const BROKER_UNAVAILABLE =
 // Expected trouble talking to SnapTrade becomes a plain message; nothing was changed.
 export function unavailableReason(deps: Deps, error: unknown, userId: string): string {
   if (error instanceof NeedsReauthError) {
-    return error.message;
+    return reconnectMessage(deps.env.APP_BASE_URL);
   }
   deps.logger.logError('[Intents] SnapTrade read failed', error, { userId });
   return BROKER_UNAVAILABLE;

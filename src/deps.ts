@@ -27,6 +27,9 @@ export type Caches = {
 export type Limiters = {
   // Per IP address, on /login and /oauth/* (V§13).
   readonly signInPerIp: RateLimiter;
+  // Per user, on MCP tool calls: 60 a minute overall, 10 proposals a minute (V§11.1).
+  readonly toolCallsPerUser: RateLimiter;
+  readonly proposalsPerUser: RateLimiter;
 };
 
 // Returns the key set used to check SnapTrade's id_token signatures. Production downloads
@@ -64,6 +67,8 @@ const ONE_MINUTE_MS = 60_000;
 export function createLimiters(now: () => Date): Limiters {
   return {
     signInPerIp: createRateLimiter({ limit: 30, windowMs: ONE_MINUTE_MS, now }),
+    toolCallsPerUser: createRateLimiter({ limit: 60, windowMs: ONE_MINUTE_MS, now }),
+    proposalsPerUser: createRateLimiter({ limit: 10, windowMs: ONE_MINUTE_MS, now }),
   };
 }
 
