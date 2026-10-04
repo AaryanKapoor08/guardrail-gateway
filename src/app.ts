@@ -7,6 +7,7 @@ import { originCheck } from './auth/csrf.js';
 import { registerLoginRoutes } from './auth/login-routes.js';
 import type { Env } from './config/env.js';
 import type { Deps } from './deps.js';
+import { registerMcpRoutes } from './mcp/handler.js';
 import { registerAuthorizeRoutes } from './oauth-server/authorize.js';
 import { registerMetadataRoutes } from './oauth-server/metadata.js';
 import { registerRevokeRoutes } from './oauth-server/revoke.js';
@@ -59,6 +60,7 @@ export function createApp(deps: Deps): Hono {
   registerAuthorizeRoutes(app, deps);
   registerTokenRoutes(app, deps);
   registerRevokeRoutes(app, deps);
+  registerMcpRoutes(app, deps);
   registerLoginRoutes(app, deps);
   registerWebRoutes(app, deps);
   registerApprovalRoutes(app, deps);
