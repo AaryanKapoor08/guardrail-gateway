@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 10 — MCP Server + Tools (M6, part 2)** (P5 deferred to Aaryan)
+**Current Phase: PHASE 11 — Dashboard Polish (M7)** (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -20,6 +20,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 7 complete and merged (CI green). Pure policy engine (16 rules, evaluate, describePolicy) and intent state machine; 221-pair table test; 100% branch coverage enforced in CI. 503 tests. Decision D18. Next: PHASE 8 (built on documented SnapTrade shapes; P5 gate waived by Aaryan).
 - 2026-10-04 (single-agent build): PHASE 8 complete in code and merged to main (CI green). Propose → approve → paper fill flow: symbol resolution, prefetch outside the lock, per-user lock + dbCounts + evaluate inside it, idempotency, approval page (V§9.2) with CSRF POSTs, paper executor and ledger, kill switch/mode service functions, intent history and cancel, disconnect cancels pending intents, best-effort Resend email, 60s sweeper, scripts/demo-flow.ts. 563 tests. Decision D19. Human checks pending: dev-DB run + browser approval, V§9.2 manual checklist. Next: PHASE 9.
 - 2026-10-04 (single-agent build): PHASE 9 complete in code and merged to main (CI green). Hand-written OAuth authorization server for MCP clients: PRM + AS metadata, CIMD with host allowlist and bounded fetch, loopback redirect matching, consent page (requester host, redirect host, loopback warning), single-use 60 s codes, PKCE S256, rotating opaque tokens with reuse detection, RFC 7009 revocation, verifyAccessToken for the MCP gate, per-IP rate limit, Connected AI apps page. 624 tests. Decision D20. Human check pending: curl the deployed AS metadata (after P5). Next: PHASE 10.
+- 2026-10-04 (single-agent build): PHASE 10 complete in code and merged to main (CI green). MCP endpoint on SDK v2 (createMcpHandler, JSON responses, stateless, both protocol eras) behind requireBearerAuth with our verifier, Host/Origin checks, the 8 tools with strict inputs, output schemas, annotations, safe error handling, per-user limits (60 calls, 10 proposals a minute). 647 tests. Decision D21. Human checks pending: the Q5 gate with real Claude web/Code, Inspector, revoke-from-dashboard (all need the P5 deploy). Next: PHASE 11.
 
 ---
 
@@ -119,16 +120,16 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(oauth-server): publish protected resource and as metadata` · `feat(oauth-server): validate cimd clients and redirect uris` · `feat(oauth-server): add consent and code issuance` · `feat(oauth-server): issue rotating opaque tokens with pkce` · `feat(web): list and revoke connected ai apps` · `test(oauth-server): cover pkce cimd rotation and reuse`
 - Notes: Built 2026-10-04 and merged to main (CI run 37192218744 green). 624 tests (42 OAuth integration + unit tests for the rate limiter and redirect matching). The metadata test asserts both fields locally; the curl against the deployed host waits for P5 (Aaryan). Token endpoint: 7–10 ms locally over 10 exchanges; a test asserts no outbound fetch. CSP moved to web/csp.ts so the consent page can allow the client's redirect origin in form-action. Extra commit: `docs: record phase 9 oauth server decisions`. See D20.
 
-### PHASE 10 — MCP Server + Tools (M6, part 2) [not started]
+### PHASE 10 — MCP Server + Tools (M6, part 2) [in progress — human checks pending]
 
-- [ ] MCP integration tests pass
+- [x] MCP integration tests pass
 - [ ] MCP Inspector (`npx @modelcontextprotocol/inspector`) connects to the deployed URL via OAuth and lists 8 tools
 - [ ] **Claude web:** add the custom connector → consent → "list my accounts" works
 - [ ] **Claude web:** "buy 1 share of <sandbox symbol> in <account>" → pending + link → approve in browser → ask Claude for status → `FILLED`
 - [ ] **Claude Code:** same connect + list flow via loopback redirect
 - [ ] Revoking the app on the dashboard → Claude's next call fails and asks to reconnect
-- [ ] Commits: `feat(mcp): mount sdk v2 handler behind bearer gate` · `feat(mcp): add read-only account and policy tools` · `feat(mcp): add propose status list and cancel tools` · `test(mcp): end-to-end tool flow through mcp client`
-- Notes:
+- [x] Commits: `feat(mcp): mount sdk v2 handler behind bearer gate` · `feat(mcp): add read-only account and policy tools` · `feat(mcp): add propose status list and cancel tools` · `test(mcp): end-to-end tool flow through mcp client`
+- Notes: Built 2026-10-04 and merged to main (CI run 37192773388 green). 647 tests. 23 MCP tests through the real SDK client wired to app.fetch, on both the 2025 (initialize) and 2026-07-28 protocol paths: 401 + resource_metadata without a token, 401 after the app is revoked, 403 for a foreign Host, exactly 8 tools in order with annotations and the approval sentence, propose → approve over HTTP → get_order_status FILLED, policy rejection as a normal result, another user's account not found, extra user_id refused, 11th proposal in a minute refused, reconnect message as a normal result. The ⛔ Q5 gate (real Claude web + Claude Code against the deployed URL, `oauth.client_seen` logs) and the keep-awake check need P5's deploy and Aaryan. Extra commit: `docs: record phase 10 mcp decisions`. See D21.
 
 ### PHASE 11 — Dashboard Polish (M7) [not started]
 
