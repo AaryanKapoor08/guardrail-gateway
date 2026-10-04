@@ -112,6 +112,11 @@ Only if it's in `PRODUCT_VISION.md` §15. Otherwise ask Aaryan first.
 | `/logout` | POST | session + CSRF | Sign out |
 | `/dashboard`, `/intents`, `/audit`, `/apps`, `/policy`, `/account/delete` | GET | session | Dashboard pages |
 | `/accounts/:ref/allow`, `/accounts/refresh`, `/policy`, `/kill-switch`, `/mode`, `/apps/:id/revoke`, `/intents/:id/cancel`, `/intents/:id/not-placed`, `/disconnect`, `/account/delete` | POST | session + CSRF | User actions |
+| `/signin` | GET | none | Choice page (demo or SnapTrade) shown when Claude's connector needs sign-in |
+| `/demo/start` | POST | none (Origin check, 5/hour per IP, ≤ 300 active demo users) | Create a 24h demo account |
+| `/try` | GET | session | Guided 2-minute test page |
+| `/try/:step` | POST | session + CSRF | Run one ready-made guided proposal |
+| `/intents/manual` | POST | session + CSRF | "Try it without an AI" proposal form |
 | `/approvals/:id` | GET | session (owner, else 404) | Approval page |
 | `/approvals/:id/approve`, `/approvals/:id/deny` | POST | session + CSRF (owner) | Human decision |
 | `/.well-known/oauth-protected-resource[/mcp]`, `/.well-known/oauth-authorization-server` | GET | none | OAuth discovery |

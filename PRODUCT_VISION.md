@@ -891,6 +891,7 @@ All variables are validated with Zod at startup, and the process **refuses to st
   /webhooks      verify.ts (canonical JSON + HMAC), routes.ts, processor.ts
   /audit         write.ts
   /jobs          sweeper.ts
+  /demo          demo-brokerage.ts (built-in fake brokerage data), routes.tsx (/demo/start, /try)
   /web           layout.tsx, routes.tsx, pages/*.tsx
   app.ts         createApp(deps): routes + middleware (tests build the app with fakes)
   server.ts      boot, sweeper, graceful shutdown

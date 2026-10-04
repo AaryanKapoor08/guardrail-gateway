@@ -106,6 +106,8 @@ src/
   webhooks/routes.ts         POST /webhooks/snaptrade
   webhooks/processor.ts      process stored events (re-sync)
   jobs/sweeper.ts            runSweepOnce + startSweeper
+  demo/demo-brokerage.ts     built-in fake brokerage data for demo users (P14)
+  demo/routes.tsx            POST /demo/start, GET /try, POST /try/:step (P14)
   web/layout.tsx             base layout, nav, disclaimer footer
   web/routes.tsx             dashboard, accounts, policy, intents, audit, apps, kill switch, mode, disconnect, delete, privacy
   web/pages/*.tsx            page components
@@ -726,12 +728,12 @@ npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/b
 2. `src/demo/demo-brokerage.ts`: a pure function `handleDemoRequest({ method, path, query, body })` → JSON matching the **real** SnapTrade shapes from the P5 spike, for `/authorizations`, `/accounts`, `/accounts/{id}/positions/all`, `/balances`, `/symbols`, `/quotes`. Data exactly as V§4.7 (Demo TFSA CAD pre-allowed with 2 × VFV.TO + 3 × XEQT.TO; Demo Individual USD not allowed; symbols VFV.TO, XEQT.TO, SHOP.TO, AAPL, VOO, BTC; fixed prices, VFV.TO = 152.40 CAD). Unknown paths → 404.
 3. `snaptradeFetch`: if the user `is_demo`, call `handleDemoRequest` instead of the network (no token). **Responses still go through the same Zod parsing**, so demo data can't drift from the real shape. `/trade/*` is never routed for demo users.
 4. `mode_allowed`: demo users → live always fails ("Live mode isn't available in the demo").
-5. `POST /demo/start` (Origin check, per-IP 5/hour, global cap 300 active): create the user (`snaptrade_sub = 'demo:' + uuid`), default policy, sync demo accounts, allow Demo TFSA, create a session, redirect to `/try`. Audit `demo.started`.
-6. Landing page + the sign-in page used by Claude's connector: two equal buttons, **"Try the demo (no sign-up, ~1 minute)"** and **"Sign in with SnapTrade"**. Banner **"DEMO DATA, not a real brokerage"** on every page for demo users.
+5. `POST /demo/start` (Origin check, per-IP 5/hour, global cap 300 active): create the user (`snaptrade_sub = 'demo:' + uuid`), default policy, sync demo accounts, allow Demo TFSA, create a session, redirect to `/try`. **If the form carries `mcp_request=<id>`** (the user came from Claude's connector sign-in page), redirect to `/oauth/authorize/resume?request=<id>` instead, so the demo account can consent and Claude connects. Audit `demo.started`.
+6. Landing page + a new **`GET /signin?mcp_request=<id>`** choice page: two equal buttons, **"Try the demo (no sign-up, ~1 minute)"** (POST `/demo/start` carrying `mcp_request`) and **"Sign in with SnapTrade"** (→ `/login?mcp_request=<id>`). Change P9's no-session redirect in `GET /oauth/authorize` from `/login?mcp_request=…` to `/signin?mcp_request=…`, so Claude's connector shows both choices. Update the P9 test that asserted the old redirect. Banner **"DEMO DATA, not a real brokerage"** on every page for demo users.
 7. `GET /try` + `POST /try/:step` (CSRF): the 6 guided steps of V§4.7, each one button calling the real `proposeOrder` with actor `user`, detail `guided demo`. After a proposal, the page shows the result and reasons, plus a "Review and approve" button for pending ones. A progress checklist on the page shows which steps are done.
-8. **"Try it without an AI"** form on the dashboard (all users): account, symbol, side, quantity, type, limit price → `proposeOrder` (actor `user`, detail `manual test`).
+8. **"Try it without an AI"** form on the dashboard (all users): `POST /intents/manual` (session + CSRF) with account, symbol, side, quantity, type, limit price → `proposeOrder` (actor `user`, detail `manual test`). The same Zod schema as the `propose_order` tool input, so validation can't differ.
 9. Sweeper: delete demo users older than 24h, using the same path as "Delete account" (audit-guard setting, cascade).
-10. Tests (`integration/demo.test.ts`): demo start creates an isolated user with fake accounts; **the fake SnapTrade `fetch` is never called for demo users** (call counter = 0); each guided step gives the expected status and reasons (too big → 2 failures; BTC → asset type; 0.5 VFV.TO → pending → approve → `FILLED`); live mode refused; per-IP limit and global cap enforced; a 24h-old demo user is fully deleted; demo data parses with the real Zod schemas.
+10. Tests (`integration/demo.test.ts`): demo start creates an isolated user with fake accounts; **the fake SnapTrade `fetch` is never called for demo users** (call counter = 0); each guided step gives the expected status and reasons (too big → 2 failures; BTC → asset type; 0.5 VFV.TO → pending → approve → `FILLED`); live mode refused; per-IP limit and global cap enforced; a 24h-old demo user is fully deleted (including MCP grants/tokens); demo data parses with the real Zod schemas; `/demo/start` with `mcp_request` lands on the consent resume page; the manual form creates an intent with actor `user` and requires CSRF.
 
 **Checkpoint:**
 - [ ] All demo tests pass (including "no SnapTrade calls for demo users")
