@@ -27,7 +27,7 @@
 - P9: after deploy, `curl https://<host>/.well-known/oauth-authorization-server` and check `client_id_metadata_document_supported: true` + `token_endpoint_auth_methods_supported: ["none"]`; check which X-Forwarded-For entry Render puts the visitor IP in (D20).
 - P10 (⛔ Q5 gate, after deploy): add the connector in Claude web + Claude Code; approve one order; check `oauth.client_seen` logs for the real client_id URLs; MCP Inspector lists 8 tools; revoking the app on /apps makes Claude's next call fail.
 - P11: in the browser, try each setting (policy limit, deny/allow list, kill switch, mode button, audit log, delete a throwaway account) plus one proposal.
-- P12: set the webhook URL `https://<host>/webhooks/snaptrade` in the SnapTrade dashboard; set `WEBHOOK_LOG_BODIES=true` on Render, trigger one Sandbox webhook, save `{ body, signature }` to `tests/fixtures/webhook-real.json`, set the flag back to false, run `SNAPTRADE_CONSUMER_KEY=... npx vitest run tests/unit/webhook-real-fixture.test.ts` (D23).
+- P12: set the webhook URL `https://<host>/webhooks/snaptrade` in the SnapTrade dashboard; set `WEBHOOK_LOG_BODIES=true` on Render, trigger one Sandbox webhook, save `{ body, signature }` to `tests/fixtures/webhook-real.json`, set the flag back to false, run `REAL_SNAPTRADE_CONSUMER_KEY=... npx vitest run tests/unit/webhook-real-fixture.test.ts` (D23).
 - P14: 2-minute stopwatch test by a fresh person on the deployed URL; connect Claude to a demo account (connector sign-in page → Try the demo) and propose an order.
 
 ## Environment facts for subagents
