@@ -108,3 +108,13 @@ Every non-obvious choice: **what** we chose, **why**, and the **alternatives** c
 - **401 retry applies to writes too:** a 401 means SnapTrade rejected the request before doing anything, so one retry with a fresh token cannot double an order.
 - **Disconnect** = revoke at SnapTrade (best effort) → delete our grant regardless → in one transaction (user row locked) revoke every MCP grant and token and audit `snaptrade.disconnected` `{ revokedAtSnapTrade, revokedAiApps }` → destroy the session. Cancelling pending intents is added with the intent service in P8.
 - **Alternatives:** an in-memory per-user mutex (breaks with more than one process); refreshing proactively on a timer (more SnapTrade calls, same correctness).
+
+### D18 — Phase 7 policy engine and state machine details (2026-10-04)
+- **Rule signature:** every rule is `(input: RuleInput) => RuleResult` with `RuleInput = { policy, order, context, estimatedValue }` (one named object instead of four positional parameters). `evaluate()` computes `estimatedValue` once and runs all 16 rules in V§8.2 order.
+- **`isDemoUser` is in `PolicyContext` now** (not added in P14), because V§8.2 rule 4 already says live mode is always refused for demo users.
+- **Skipped rules pass, and say so.** When there is no usable price or quantity, `max_order_value` and `max_daily_value` pass with "Skipped: the order value can't be estimated…", and `no_short_selling` skips an unparseable quantity, so one problem isn't reported three times (the price or quantity rule already fails).
+- **Live gates** are one function, `liveTradingProblems(context)`, reused later by the mode switch to show the exact failing gates (V§10.3). Unknown connection or account counts as failing a gate.
+- **A quantity like `2.000` is a whole number** (trailing zeros ignored, same as D14), so it is accepted in live mode.
+- **`INTENT_STATES` moved to `src/intents/state-machine.ts`** (as D14 anticipated); the DB schema's check constraint imports it, so the database and the state machine can't disagree.
+- **Coverage is enforced in CI**, not just measured: `npm run test:coverage` fails below 100% branch coverage on `src/policy/**` and `src/intents/state-machine.ts` (`@vitest/coverage-v8`, added here as BuildFlow planned).
+- **Alternatives:** short-circuiting at the first failure (hides problems from the AI and the user); one big `switch` instead of 16 functions (harder to test and read one rule at a time).
