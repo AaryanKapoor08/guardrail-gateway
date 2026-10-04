@@ -10,20 +10,21 @@ Last Updated: 2026-10-03
 
 ## Session Notes
 
-- 2026-10-03: Planning complete. PRODUCT_VISION.md (final vision, cross-checked twice against live SnapTrade, Claude-connector, and MCP docs) and claude/BuildFlow.md written. Repo created and pushed. .env created locally (git-ignored) with TOKEN_ENCRYPTION_KEY pre-generated. Waiting on Phase 0 human tasks (SnapTrade OAuth app credentials, consumer key, Neon URL, Node 24, Docker running).
+- 2026-10-03: Planning complete. PRODUCT_VISION.md (final vision, cross-checked twice against live SnapTrade, Claude-connector, and MCP docs) and claude/BuildFlow.md written. Repo created and pushed. .env created locally (git-ignored) with TOKEN_ENCRYPTION_KEY pre-generated. Waiting on Phase 0 human tasks.
+- 2026-10-03: Env verified live. Neon OK (Postgres 17.11, pooled, us-east-1, transactions OK through pooler, sslmode switched to verify-full). SnapTrade discovery + JWKS OK. Client id+secret ACCEPTED by the token endpoint (wrong-secret control rejected with invalid_client). Consumer key set (50 chars), but it can only be verified with a real webhook (P12). Redirect URI registration is verified by the first real sign-in (P3). Still TODO: install Node 24 (currently 22.16), start Docker Desktop, SnapTrade Personal test workspace with Sandbox, Render account.
 
 ---
 
 ## Phase Checklist
 
-### PHASE 0 — Accounts, Keys, Machine (human tasks) [not started]
+### PHASE 0 — Accounts, Keys, Machine (human tasks) [in progress]
 
 - [ ] `node -v` → `v24.*`
 - [ ] `docker info` succeeds
-- [ ] SnapTrade Test OAuth app exists with the localhost redirect URI; client id + secret saved in `.env`
-- [ ] Consumer key saved in `.env`
+- [x] SnapTrade Test OAuth app exists with the localhost redirect URI; client id + secret saved in `.env`
+- [x] Consumer key saved in `.env`
 - [ ] SnapTrade Personal test workspace has the Sandbox brokerage connected
-- [ ] Neon pooled `DATABASE_URL` saved in `.env`
+- [x] Neon pooled `DATABASE_URL` saved in `.env`
 - [ ] Render account exists and is linked to GitHub
 - Notes:
 

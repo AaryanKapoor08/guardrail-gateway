@@ -172,7 +172,7 @@ We do **not** compete with SnapTrade's read connector. Our value is the enforced
 
 ### 5.1 SnapTrade OAuth
 
-- **Discovery:** `GET https://api.snaptrade.com/.well-known/oauth-authorization-server` lists the authorization, token, **revocation**, and registration endpoints. `/.well-known/openid-configuration` lists the OIDC fields (`jwks_uri`, etc.), and the docs' example of it does **not** show `revocation_endpoint`. We read **both** at startup, cache them for 24 hours, and never hard-code endpoints.
+- **Discovery:** `GET https://api.snaptrade.com/.well-known/oauth-authorization-server` lists the authorization, token, **revocation**, and registration endpoints. `/.well-known/openid-configuration` lists the OIDC fields (`jwks_uri`, etc.). The docs' example omits `revocation_endpoint`, but the **live** document includes it (verified 2026-10-03). We read **both** at startup, cache them for 24 hours, and never hard-code endpoints. Live values (2026-10-03): token `https://api.snaptrade.com/oauth/token/`, revocation `https://api.snaptrade.com/oauth/revoke_token/`, authorize `https://dashboard.snaptrade.com/oauth/authorize`, token auth methods `client_secret_basic, client_secret_post, none`, one RS256 JWKS key.
 - Issuer `https://api.snaptrade.com`. JWKS `https://api.snaptrade.com/.well-known/jwks.json`. RS256. PKCE `S256` only.
 - **Confidential client.** The `client_secret` stays on the backend. It is shown once at creation, can be rotated, and rotation invalidates the old one.
 - **Token exchange and refresh:** POST, HTTP Basic auth, `application/x-www-form-urlencoded`.
@@ -821,7 +821,7 @@ SNAPTRADE_REQUEST_TRADE_SCOPE=false           # only true after SnapTrade enable
 SNAPTRADE_CONSUMER_KEY=                       # only for webhook signature verification
 
 # Database / crypto
-DATABASE_URL=                                 # Neon pooled connection string (sslmode=require)
+DATABASE_URL=                                 # Neon pooled connection string (sslmode=verify-full)
 TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5433/guardrail_test   # tests only (Docker)
 TOKEN_ENCRYPTION_KEY=                         # 32 random bytes, base64 (openssl rand -base64 32)
 

@@ -9,10 +9,15 @@ Rough edges found in SnapTrade's API and docs while building Guardrail Gateway, 
 - **Workaround:** use `/positions/all` (discriminated by `instrument.kind`).
 - **Suggestion:** update `llms.txt`, or redirect the old page with a deprecation note.
 
-### F2 — OIDC discovery document doesn't show `revocation_endpoint`
-- **Observed:** the OAuth guide's example `/.well-known/openid-configuration` omits `revocation_endpoint`; it's in `/.well-known/oauth-authorization-server`.
-- **Workaround:** read both documents at startup.
-- **Suggestion:** include `revocation_endpoint` in the OIDC discovery document too (it's a common client expectation).
+### F2 — Docs example of the OIDC discovery document is incomplete
+- **Observed:** the OAuth guide's example `/.well-known/openid-configuration` omits `revocation_endpoint` and lists only 4 scopes. The **live** document (fetched 2026-10-03) does include `revocation_endpoint`, and the live AS metadata lists scopes `openid, profile, email, read, workspaces:read, trade, webhook`.
+- **Workaround:** none needed. We read the live metadata and never hard-code endpoints.
+- **Suggestion:** refresh the docs example so readers don't conclude revocation is missing.
+
+### F8 — Undocumented `workspaces:read` scope in live metadata
+- **Observed:** `scopes_supported` in `/.well-known/oauth-authorization-server` includes `workspaces:read`, which the OAuth guide's scope table doesn't mention.
+- **Workaround:** we don't request it.
+- **Suggestion:** document what it grants, or omit it from public metadata if it's internal.
 
 ### F3 — Webhook retries vs. the documented 5-minute freshness check
 - **Observed:** the verification example rejects payloads whose `eventTimestamp` is more than 5 minutes old, but undeliverable webhooks are retried with backoff starting at 30 minutes. Unless retries update `eventTimestamp`, a client following the example rejects every retry.
