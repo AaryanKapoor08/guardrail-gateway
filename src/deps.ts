@@ -3,6 +3,8 @@ import type pg from 'pg';
 import type { Env } from './config/env.js';
 import { createDb, type Database } from './db/client.js';
 import { createLogger, type Logger } from './lib/logger.js';
+import { createRateLimiter, type RateLimiter } from './lib/ratelimit.js';
+import { CLIENT_METADATA_MAX_TTL_MS, type ClientMetadata } from './oauth-server/cimd.js';
 import { createTtlCache, type TtlCache } from './snaptrade/cache.js';
 import { POSITIONS_TTL_MS, QUOTE_TTL_MS, SYMBOL_SEARCH_TTL_MS } from './snaptrade/cached.js';
 import { METADATA_TTL_MS, type SnapTradeMetadata } from './snaptrade/discovery.js';
@@ -18,6 +20,13 @@ export type Caches = {
   readonly balances: TtlCache<string, Balance[]>;
   readonly symbolSearches: TtlCache<string, SymbolMatch[]>;
   readonly quotes: TtlCache<string, Quote | null>;
+  // client_id URL -> the AI app's metadata document (CIMD), kept per its own max-age.
+  readonly clientMetadata: TtlCache<string, ClientMetadata>;
+};
+
+export type Limiters = {
+  // Per IP address, on /login and /oauth/* (V§13).
+  readonly signInPerIp: RateLimiter;
 };
 
 // Returns the key set used to check SnapTrade's id_token signatures. Production downloads
@@ -34,6 +43,7 @@ export type Deps = {
   readonly now: () => Date;
   readonly logger: Logger;
   readonly caches: Caches;
+  readonly limiters: Limiters;
   readonly idTokenKeys: IdTokenKeySource;
 };
 
@@ -45,6 +55,15 @@ export function createCaches(now: () => Date): Caches {
     balances: createTtlCache({ ttlMs: POSITIONS_TTL_MS, now }),
     symbolSearches: createTtlCache({ ttlMs: SYMBOL_SEARCH_TTL_MS, now }),
     quotes: createTtlCache({ ttlMs: QUOTE_TTL_MS, now }),
+    clientMetadata: createTtlCache({ ttlMs: CLIENT_METADATA_MAX_TTL_MS, now }),
+  };
+}
+
+const ONE_MINUTE_MS = 60_000;
+
+export function createLimiters(now: () => Date): Limiters {
+  return {
+    signInPerIp: createRateLimiter({ limit: 30, windowMs: ONE_MINUTE_MS, now }),
   };
 }
 
@@ -77,6 +96,7 @@ export function createDeps(env: Env): Deps {
     now,
     logger,
     caches: createCaches(now),
+    limiters: createLimiters(now),
     idTokenKeys: createRemoteKeySource(),
   };
 }

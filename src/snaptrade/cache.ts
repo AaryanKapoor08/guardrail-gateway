@@ -3,7 +3,8 @@
 
 export type TtlCache<K, V> = {
   readonly get: (key: K) => V | undefined;
-  readonly set: (key: K, value: V) => void;
+  // `ttlMs` overrides the cache's default for this one entry (e.g. a document's own max-age).
+  readonly set: (key: K, value: V, ttlMs?: number) => void;
   readonly delete: (key: K) => void;
   readonly deleteWhere: (shouldDelete: (key: K) => boolean) => void;
   // Returns the cached value, or runs `loader` once and caches its result. Callers asking for
@@ -29,8 +30,8 @@ export function createTtlCache<K, V>(options: { ttlMs: number; now: () => Date }
     return entry.value;
   }
 
-  function set(key: K, value: V): void {
-    entries.set(key, { value, expiresAtMs: options.now().getTime() + options.ttlMs });
+  function set(key: K, value: V, ttlMs: number = options.ttlMs): void {
+    entries.set(key, { value, expiresAtMs: options.now().getTime() + ttlMs });
   }
 
   function deleteWhere(shouldDelete: (key: K) => boolean): void {

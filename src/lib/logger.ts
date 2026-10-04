@@ -19,6 +19,8 @@ const ALLOWED_FIELDS = new Set([
   'state',
   'reason',
   'clientHost',
+  // An MCP client's public client_id URL (never a secret).
+  'clientId',
   'errorName',
   'errorMessage',
 ]);
