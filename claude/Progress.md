@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 7 — Policy Engine + State Machine (M4, pure code)** (P5 deferred to Aaryan)
+**Current Phase: PHASE 8 — Intents, Approvals, Paper Executor (M5)** (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -17,6 +17,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 3 complete in code and merged to main (CI green). Sign in with SnapTrade (OIDC + PKCE + state + nonce, discovery with 24h cache, id_token checks with an injected key source), hashed DB sessions with fixation protection, per-session CSRF tokens plus an Origin check against APP_BASE_URL, security headers, home/dashboard/error pages, strict default policy schema. Fake SnapTrade (RS256 keys, token endpoint with rotation and counters, revocation, data API hooks) and test app helpers added. 142 tests. Human checks pending: real browser sign-in, Deny once, check ciphertext in Neon, check dev logs. Decision D15. Next: PHASE 4.
 - 2026-10-04 (single-agent build): PHASE 4 complete in code and merged to main (CI green). snaptradeFetch (10s timeout, 2 read retries on 429/5xx/network using SnapTrade reset headers then body hint then jittered backoff, status-only errors and logs), typed /authorizations and /accounts calls with tolerant Zod schemas, sync into connections/accounts (new accounts not allowed, last 4 only, missing accounts present=false), 5-minute sync cache, dashboard accounts table with allow toggles, refresh, broken-connection and reconnect banners, MCP URL box. Migration 0002 (nullable raw_type, number_last4). 167 tests. Decision D16. Next: PHASE 6 (P5 skipped: deploy + real API check is Aaryan's).
 - 2026-10-04 (single-agent build): PHASE 6 complete in code and merged to main (CI green). Single-flight refresh under a grant row lock (hash check reuses a token another request refreshed), 5-minute refresh margin, 401 → refresh once → retry once → needs_reauth, invalid_grant clears tokens, POST /disconnect revokes at SnapTrade and cuts off MCP grants. 178 tests. Decision D17. Next: PHASE 7.
+- 2026-10-04 (single-agent build): PHASE 7 complete and merged (CI green). Pure policy engine (16 rules, evaluate, describePolicy) and intent state machine; 221-pair table test; 100% branch coverage enforced in CI. 503 tests. Decision D18. Next: PHASE 8 (built on documented SnapTrade shapes; P5 gate waived by Aaryan).
 
 ---
 
@@ -90,14 +91,14 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(tokens): add single-flight refresh with row lock` · `feat(snaptrade): refresh once and retry once on 401` · `feat(auth): disconnect revokes snaptrade token` · `test(tokens): prove one refresh under concurrency`
 - Notes: Built 2026-10-04 and merged to main (CI run 37181569904 green). 178 tests. 10 concurrent calls with an expired token hit the fake token endpoint exactly once and the DB holds the rotated refresh token; 401 → refresh → retry; second 401 and invalid_grant both clear the grant and set needs_reauth; network error retried once with the same refresh token; 5xx keeps the grant; disconnect revokes with token_type_hint=refresh_token, deletes the grant, revokes MCP grants/tokens, ends the session. Manual DB-expiry and real revocation checks wait for Aaryan. See D17.
 
-### PHASE 7 — Policy Engine + State Machine (M4, pure code) [not started]
+### PHASE 7 — Policy Engine + State Machine (M4, pure code) [complete]
 
-- [ ] 221-pair state-machine test passes; exactly 17 valid transitions
-- [ ] Every rule has pass + fail + boundary tests
-- [ ] 100% branch coverage on policy + state machine
-- [ ] No I/O imports in `src/policy/**` or `state-machine.ts` (check: no `db`, `fetch`, or `deps` imports)
-- [ ] Commits: `feat(policy): add pure rule functions and evaluate` · `feat(intents): add pure order intent state machine` · `test(policy): table-driven tests for every rule and transition`
-- Notes:
+- [x] 221-pair state-machine test passes; exactly 17 valid transitions
+- [x] Every rule has pass + fail + boundary tests
+- [x] 100% branch coverage on policy + state machine
+- [x] No I/O imports in `src/policy/**` or `state-machine.ts` (check: no `db`, `fetch`, or `deps` imports)
+- [x] Commits: `feat(policy): add pure rule functions and evaluate` · `feat(intents): add pure order intent state machine` · `test(policy): table-driven tests for every rule and transition`
+- Notes: Verified 2026-10-04, merged to main (CI run 37181857162 green, now running coverage). 503 tests. 16 pure rule functions with plain-English pass and fail reasons, evaluate() with no short-circuit and half-up cent rounding, describePolicy(), the 13-state/17-event machine with TERMINAL/COUNTED/OPEN_SELL sets. Coverage: 100% statements, branches, functions, lines on src/policy/** and state-machine.ts, enforced by CI (npm run test:coverage). Grep shows no db, fetch, or deps imports in those files. Extra commit: ci: enforce full branch coverage. See D18.
 
 ### PHASE 8 — Intents, Approvals, Paper Executor (M5) [not started]
 

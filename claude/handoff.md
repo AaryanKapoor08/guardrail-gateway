@@ -9,8 +9,8 @@
 |---|---|---|
 | 1 | P1 Scaffold + P2 Schema/foundations | **done** (82 tests, CI green) |
 | 2 | P3 Sign-in + P4 Accounts sync/dashboard | **done** (167 tests, CI green) |
-| 3 | P6 Token lifecycle + P7 Policy engine/state machine | P6 done; P7 running |
-| 4 | P8 Intents, approvals, paper executor | pending |
+| 3 | P6 Token lifecycle + P7 Policy engine/state machine | **done** (503 tests, CI green) |
+| 4 | P8 Intents, approvals, paper executor | running |
 | 5 | P9 OAuth authorization server for MCP | pending |
 | 6 | P10 MCP server + tools | pending |
 | 7 | P11 Dashboard polish | pending |
@@ -41,3 +41,4 @@
 - 2026-10-04: P3 done: 142 tests, CI green, decisions D15.
 - 2026-10-04: P4 done: 167 tests, CI green, decisions D16.
 - 2026-10-04: P6 done: 178 tests, CI green, decisions D17.
+- 2026-10-04: P7 done: 503 tests, CI green, decisions D18.
