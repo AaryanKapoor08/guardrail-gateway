@@ -15,15 +15,13 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { MODES, ORDER_TYPES, SIDES } from '../policy/types.js';
 
 // The full data model from PRODUCT_VISION §14.1. Columns marked "null" there are nullable;
 // every other column is NOT NULL. Money and quantities are `numeric` (strings in TypeScript).
 
-export const MODES = ['paper', 'live'] as const;
 export const CONNECTION_TYPES = ['read', 'trade'] as const;
 export const MCP_TOKEN_KINDS = ['access', 'refresh'] as const;
-export const SIDES = ['buy', 'sell'] as const;
-export const ORDER_TYPES = ['market', 'limit'] as const;
 export const EXECUTORS = ['paper', 'snaptrade'] as const;
 export const ACTORS = ['ai', 'user', 'system'] as const;
 export const INTENT_STATUSES = [
