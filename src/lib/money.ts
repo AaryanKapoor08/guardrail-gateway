@@ -6,6 +6,11 @@ import Big from 'big.js';
 const DECIMAL_STRING = /^-?\d+(\.\d+)?$/;
 const ROUND_HALF_UP = 1;
 
+// True for plain decimal notation like "12", "0.5", "-3.25" (what `dec` accepts).
+export function isDecimalString(value: string): boolean {
+  return DECIMAL_STRING.test(value);
+}
+
 // Plain decimal notation only: no exponents ("1e3"), spaces, or signs like "+5".
 export function dec(value: string): Big {
   if (!DECIMAL_STRING.test(value)) {
