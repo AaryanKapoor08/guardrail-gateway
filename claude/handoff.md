@@ -16,11 +16,12 @@
 | 7 | P11 Dashboard polish | **done** (686 tests, CI green) |
 | 8 | P12 Webhooks | **done** (710 tests, CI green) |
 | 9 | P14 2-minute instant demo | **done** (726 tests, CI green) |
-| 10 | P15 Submission docs (README, THREAT_MODEL, demo script; no video) | running |
+| 10 | P15 Submission docs (README, THREAT_MODEL, demo script; no video) | **done** (docs; CI green) |
 
 **Skipped tonight:** P5 (deploy + real API spike: needs Aaryan + Render), P13 (live trading: SnapTrade hasn't enabled `trade`).
 
 ## Human tasks for tomorrow (append as batches finish)
+- P15: record the demo video from `docs/demo-script.md`; run the V§19.2 checklist on production with a second test user; check ≥ 99% uptime over 7 days and only one free Render service; free up test-app user slots for reviewers; then tag `v1.0.0`.
 - P8: run `npx tsx scripts/demo-flow.ts`-style propose against the dev DB, approve in the browser, see the paper position; tick the V§9.2 approval-page checklist.
 - P3: real sign-in at http://localhost:3000 with the SnapTrade Personal test user; click Deny once.
 - P5: create a Render account, then deploy (controller does it via the API with `RENDER_API_KEY`); UptimeRobot monitor; real API capability spike; apply any shape fixes.
@@ -51,3 +52,4 @@
 - 2026-10-04: P11 done: 686 tests, CI green, decisions D22.
 - 2026-10-04: P12 done: 710 tests (+1 skipped real-fixture), CI green, decisions D23.
 - 2026-10-04: P14 done: 726 tests (+1 skipped), CI green, decisions D24.
+- 2026-10-04: P15 done: docs complete, 726 tests (+1 skipped), CI green on main, decisions D25-D26. All buildable phases finished; the rest is the human task list above.

@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 15 — Submission Polish (M10)** (P5 and P13 skipped) (P5 deferred to Aaryan)
+**Current Phase: all buildable phases done in code (P1–P4, P6–P12, P14, P15); waiting on Aaryan for P5 (deploy + real API check), the human checks, and P13 (if SnapTrade enables `trade`)** (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -24,6 +24,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 11 complete in code and merged to main (CI green). Policy editor (validated by the engine's own schema, version bump, before/after audit), kill switch and mode controls with header state, audit log view, account deletion (best-effort revoke, one transaction under the audit trigger), public privacy page. Fixed a sync isolation bug found by the deletion test. 686 tests. Decision D22. Human check pending: browser walk-through of every setting. Next: PHASE 12.
 - 2026-10-04 (single-agent build): PHASE 12 complete in code and merged to main (CI green). Python-compatible canonical JSON, signature check, idempotent storage with stale flag, background processing as re-sync hints (no locks during network calls), sweeper retries and 30-day purge, new-account notice. 710 tests (+1 skipped real-fixture test). Decision D23. Human checks pending: webhook URL in the SnapTrade dashboard, capture and verify one real webhook. Next: PHASE 14 (P13 skipped).
 - 2026-10-04 (single-agent build): PHASE 14 complete in code and merged to main (CI green). Instant demo: built-in demo brokerage behind snaptradeFetch (same Zod parsing, no network), POST /demo/start with per-IP and global limits, sign-in choice page for Claude's connector, guided /try page, "Try it without an AI" form, demo banner, 24h cleanup through the account-deletion path. 726 tests. Decision D24. Human checks pending: stopwatch test and Claude on a demo account (after deploy). Next: PHASE 15 (docs).
+- 2026-10-04 (single-agent build): PHASE 15 docs complete and merged to main (CI green): README, THREAT_MODEL.md, docs/demo-script.md, DECISIONS D25–D26, API_FEEDBACK F9–F12. 726 tests (+1 skipped real-webhook fixture test). Remaining work is human: P5 deploy and API check, every manual checkpoint, the demo video, the v1.0.0 tag; P13 only if SnapTrade enables trade.
 
 ---
 
@@ -166,10 +167,10 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(demo): add built-in demo brokerage data` · `feat(demo): add instant demo accounts with 24h cleanup` · `feat(web): add guided try page and manual proposal form` · `test(demo): cover demo isolation guided steps and cleanup`
 - Notes: Built 2026-10-04 and merged to main (CI run 37194407932 green). 726 tests (+1 skipped). 16 demo tests: isolated demo user with the Demo TFSA allowed and Demo Individual not; the fake SnapTrade fetch sees zero requests through a full demo; too big → both limit reasons ($1,524.00 CAD); 0.001 BTC → asset type only; 0.5 VFV.TO → pending → approve → FILLED with the paper position and checklist; live refused; 6th start from one IP refused; cap of 300; Origin check; 24h-old demo user fully deleted including MCP grants/tokens; demo data parses with the real schemas; /trade/* never routed; connector sign-in page → demo → consent; manual form recorded as `user`/`manual test` with CSRF. The guided page landed in the demo-accounts commit (one routes file). Extra commit: `docs: record phase 14 demo decisions`. See D24. Stopwatch and Claude-on-demo checks need the deploy (Aaryan).
 
-### PHASE 15 — Submission Polish (M10) [not started]
+### PHASE 15 — Submission Polish (M10) [in progress — human checks pending]
 
-- [ ] README lets a stranger understand the project without other files
+- [x] README lets a stranger understand the project without other files
 - [ ] V§19.2 manual checklist fully ticked on production
-- [ ] CI green on `main`, tag `v1.0.0` pushed
-- [ ] Commits: `docs: write readme with architecture and tradeoffs` · `docs: complete decisions api feedback and threat model` · `docs: add demo video script`
-- Notes:
+- [ ] CI green on `main`, tag `v1.0.0` pushed (CI is green on main; the tag waits for Aaryan after the deploy and manual checks)
+- [x] Commits: `docs: write readme with architecture and tradeoffs` · `docs: complete decisions api feedback and threat model` · `docs: add demo video script`
+- Notes: Written 2026-10-04 and merged to main (CI run 37194791691 green). README (try-it-first, how it works, Claude setup, the 16 rules, architecture, two OAuth roles, tradeoffs, known limits, local setup, tests, repo map), THREAT_MODEL.md (assets, trust boundaries, 14 attacker scenarios, accepted risks), docs/demo-script.md (timed 3-minute script), DECISIONS D25 (index of every V§0 item) and D26, API_FEEDBACK F9–F12 plus a "still to confirm" table. Extra commits: `fix(webhooks): keep the real-fixture test off the ci placeholder key`, `docs: note the mcp sdk startup notice`. Video, production checklist, uptime check, and tag are Aaryan's.
