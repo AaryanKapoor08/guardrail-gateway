@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Env } from '../config/env.js';
 import type { Deps } from '../deps.js';
+import { readLimitedText } from '../lib/read-limited.js';
 
 // Client ID Metadata Documents (CIMD, V§11.3 steps 1–3). An MCP client's `client_id` is an
 // HTTPS URL; the JSON document at that URL describes the client and its redirect URIs. We only
@@ -44,26 +45,6 @@ export function checkClientIdUrl(env: Env, clientId: string): ClientIdCheck {
   return { ok: true, clientHost: url.host };
 }
 
-// Reads at most `maxBytes`, counting as it goes, so a huge document can't exhaust memory.
-// Returns null if the body is larger than that.
-async function readLimitedText(response: Response, maxBytes: number): Promise<string | null> {
-  if (response.body === null) {
-    return '';
-  }
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-  for (let part = await reader.read(); !part.done; part = await reader.read()) {
-    totalBytes += part.value.byteLength;
-    if (totalBytes > maxBytes) {
-      await reader.cancel();
-      return null;
-    }
-    chunks.push(part.value);
-  }
-  return new TextDecoder().decode(Buffer.concat(chunks));
-}
-
 // Honours the document's `Cache-Control: max-age`, kept between 5 minutes and 24 hours.
 function cacheLifetimeMs(cacheControl: string | null): number {
   const match = /max-age=(\d+)/i.exec(cacheControl ?? '');
@@ -89,7 +70,7 @@ async function downloadDocument(
       return null;
     }
     const lifetimeMs = cacheLifetimeMs(response.headers.get('cache-control'));
-    return { text: await readLimitedText(response, MAX_DOCUMENT_BYTES), lifetimeMs };
+    return { text: await readLimitedText(response.body, MAX_DOCUMENT_BYTES), lifetimeMs };
   } catch (error) {
     // Handled: the app's host is down or slow; the user sees "try again" and nothing is stored.
     deps.logger.logError('[OAuth] client metadata fetch failed', error);
