@@ -7,8 +7,8 @@
 ## Batch plan (in order)
 | # | Batch | Status |
 |---|---|---|
-| 1 | P1 Scaffold + P2 Schema/foundations | pending |
-| 2 | P3 Sign-in + P4 Accounts sync/dashboard | pending |
+| 1 | P1 Scaffold + P2 Schema/foundations | **done** (82 tests, CI green) |
+| 2 | P3 Sign-in + P4 Accounts sync/dashboard | running |
 | 3 | P6 Token lifecycle + P7 Policy engine/state machine | pending |
 | 4 | P8 Intents, approvals, paper executor | pending |
 | 5 | P9 OAuth authorization server for MCP | pending |
@@ -35,3 +35,4 @@
 
 ## Log
 - 2026-10-04: handoff created; starting batch 1.
+- 2026-10-04: batch 1 done (P1+P2: 82 tests pass, CI green on main, decisions D13-D14). Note for P4: accounts name/raw_type/number_last4 are NOT NULL but SnapTrade may return null. Batch 2 started.
