@@ -64,6 +64,8 @@ export type FakeSnapTrade = {
   readonly onApi: (method: string, pattern: RegExp, handler: ApiHandler) => void;
   // The next `times` API calls matching the pattern get this response instead.
   readonly failApi: (pattern: RegExp, response: FakeResponse, times?: number) => void;
+  // Documents on other hosts the app fetches (an MCP client's metadata document): URL -> answer.
+  readonly serveExternal: (url: string, response: FakeResponse) => void;
   tokenDelayMs: number;
   // The data the API serves. Tests change it to simulate what the user has at their brokerage.
   brokerage: FakeBrokerage;
@@ -194,6 +196,7 @@ export async function createFakeSnapTrade(options: {
   const revocationFailures: FakeResponse[] = [];
   const apiRoutes: ApiRoute[] = [];
   const apiFailures: { pattern: RegExp; response: FakeResponse; remaining: number }[] = [];
+  const externalResponses = new Map<string, FakeResponse>();
 
   const fake: FakeSnapTrade = {
     fetch: handleFetch,
@@ -218,6 +221,9 @@ export async function createFakeSnapTrade(options: {
     },
     failApi: (pattern, response, times = 1) => {
       apiFailures.push({ pattern, response, remaining: times });
+    },
+    serveExternal: (url, response) => {
+      externalResponses.set(url, response);
     },
     tokenDelayMs: 0,
     brokerage: buildDefaultBrokerage(),
@@ -386,6 +392,10 @@ export async function createFakeSnapTrade(options: {
     }
     if (url.startsWith(FAKE_API_BASE)) {
       return handleApiRequest(request);
+    }
+    const external = externalResponses.get(url);
+    if (external !== undefined) {
+      return external;
     }
     throw new TypeError(`fake SnapTrade: no route for ${request.method} ${url}`);
   }
