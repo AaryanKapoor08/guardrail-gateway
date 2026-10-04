@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5433:5432
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: guardrail_test
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Dummy-but-valid values so anything that loads the env can start. None of these are real
+    # secrets: the key is 32 zero bytes and the SnapTrade values are placeholders. Tests never
+    # call the real SnapTrade API.
+    env:
+      NODE_ENV: test
+      APP_BASE_URL: http://localhost:3000
+      SNAPTRADE_OAUTH_CLIENT_ID: ci-client-id
+      SNAPTRADE_OAUTH_CLIENT_SECRET: ci-client-secret
+      SNAPTRADE_REDIRECT_URI: http://localhost:3000/oauth/snaptrade/callback
+      SNAPTRADE_CONSUMER_KEY: ci-consumer-key
+      DATABASE_URL: postgres://postgres:postgres@localhost:5433/guardrail_test
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/guardrail_test
+      TOKEN_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      MCP_ALLOWED_CLIENT_HOSTS: claude.ai
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint and typecheck
+        run: npm run check
+
+      - name: Test
+        run: npm test
