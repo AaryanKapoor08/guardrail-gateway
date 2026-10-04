@@ -1,3 +1,6 @@
+import { eq } from 'drizzle-orm';
+import { users } from '../db/schema.js';
+import { handleDemoRequest } from '../demo/demo-brokerage.js';
 import type { Deps } from '../deps.js';
 import { sha256Hex } from '../lib/crypto.js';
 import { NeedsReauthError } from '../lib/errors.js';
@@ -167,6 +170,34 @@ function isUnauthorized(error: unknown): boolean {
   return error instanceof SnapTradeApiError && error.status === 401;
 }
 
+async function isDemoUser(deps: Deps, userId: string): Promise<boolean> {
+  const [user] = await deps.db
+    .select({ isDemo: users.isDemo })
+    .from(users)
+    .where(eq(users.id, userId));
+  return user?.isDemo === true;
+}
+
+// Demo users never reach SnapTrade (V§4.7): the built-in demo brokerage answers instead, in the
+// same shapes, and the caller parses its answer with the same Zod schema as a real one.
+function askDemoBrokerage(userId: string, request: SnapTradeRequest): unknown {
+  const response = handleDemoRequest({
+    userId,
+    method: request.method,
+    path: request.path,
+    query: request.query ?? {},
+    body: request.body,
+  });
+  if (response.status !== 200) {
+    const route = `${request.method} ${routeTemplate(request.path)}`;
+    throw new SnapTradeApiError(
+      `[SnapTrade] ${route} failed with status ${response.status}`,
+      response.status,
+    );
+  }
+  return response.body;
+}
+
 // Calls SnapTrade as the given user and returns the parsed JSON body (still `unknown`: the
 // caller validates it with a Zod schema). A 401 means SnapTrade rejected the token before doing
 // anything, so it is safe to refresh once and retry once, even for writes (V§12.1). A second
@@ -176,6 +207,9 @@ export async function snaptradeFetch(
   userId: string,
   request: SnapTradeRequest,
 ): Promise<unknown> {
+  if (await isDemoUser(deps, userId)) {
+    return askDemoBrokerage(userId, request);
+  }
   const accessToken = await getAccessToken(deps, userId);
   try {
     return await readJson(request, await sendSnapTradeRequest(deps, accessToken, request));
