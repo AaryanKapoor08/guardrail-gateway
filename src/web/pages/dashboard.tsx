@@ -206,6 +206,49 @@ function McpBox(props: { mcpUrl: string }) {
   );
 }
 
+// "Try it without an AI" (V§4.7): the same proposal path, recorded as the user's own test.
+function ManualProposal(props: { accounts: readonly AccountListItem[]; csrfToken: string }) {
+  const usable = props.accounts.filter((account) => account.allowed && account.present);
+  return (
+    <section class="box">
+      <h2>Try it without an AI</h2>
+      {usable.length === 0 ? (
+        <p>Allow an account above first.</p>
+      ) : (
+        <form method="post" action="/intents/manual">
+          <CsrfField token={props.csrfToken} />
+          <label for="account_ref">Account</label>
+          <select id="account_ref" name="account_ref">
+            {usable.map((account) => (
+              <option value={account.ref}>{account.name}</option>
+            ))}
+          </select>
+          <label for="symbol">Symbol</label>
+          <input id="symbol" name="symbol" placeholder="VFV.TO" />
+          <label for="side">Action</label>
+          <select id="side" name="side">
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+          </select>
+          <label for="quantity">Quantity</label>
+          <input id="quantity" name="quantity" inputmode="decimal" placeholder="1" />
+          <label for="order_type">Order type</label>
+          <select id="order_type" name="order_type">
+            <option value="market">Market</option>
+            <option value="limit">Limit</option>
+          </select>
+          <label for="limit_price">Limit price (limit orders only)</label>
+          <input id="limit_price" name="limit_price" inputmode="decimal" />
+          <p>
+            <button type="submit">Propose</button>{' '}
+            <span class="notice">It is checked by your policy and still needs your approval.</span>
+          </p>
+        </form>
+      )}
+    </section>
+  );
+}
+
 function PendingApprovals(props: { intents: readonly IntentView[] }) {
   return (
     <section>
@@ -315,6 +358,7 @@ export function DashboardPage(props: DashboardProps) {
         </form>
       </section>
       <PendingApprovals intents={props.pendingIntents} />
+      <ManualProposal accounts={props.accounts} csrfToken={csrfToken} />
       <PaperPositions positions={props.paperPositions} />
       <KillSwitch
         isOn={signedIn.user.killSwitch}

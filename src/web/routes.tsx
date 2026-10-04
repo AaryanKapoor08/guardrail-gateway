@@ -9,7 +9,7 @@ import { listPaperPositions } from '../executors/paper.js';
 import { grantHasTradeScope } from '../intents/context.js';
 import { liveModeProblems } from '../intents/controls.js';
 import { cancelIntent } from '../intents/decisions.js';
-import { listRecentIntents } from '../intents/service.js';
+import { listRecentIntents, proposeOrder } from '../intents/service.js';
 import { NeedsReauthError, NotFoundError } from '../lib/errors.js';
 import { disconnectApp, listConnectedApps } from '../oauth-server/grants.js';
 import { syncIfStale, syncUserConnectionsAndAccounts } from '../snaptrade/sync.js';
@@ -152,6 +152,66 @@ async function cancelFromHistory(deps: Deps, c: Context<SignedInEnv>): Promise<R
   return c.redirect('/intents');
 }
 
+// An unknown or someone else's id is "not found", never "forbidden" (V§13).
+async function withNotFoundPage(
+  c: Context<SignedInEnv>,
+  action: () => Promise<Response>,
+): Promise<Response> {
+  try {
+    return await action();
+  } catch (error) {
+    if (!(error instanceof NotFoundError)) {
+      throw error;
+    }
+    const { session, user } = c.var;
+    return renderPage(
+      c,
+      <ErrorPage title="Not found" message={error.message} signedIn={{ session, user }} />,
+      404,
+    );
+  }
+}
+
+const ManualFormSchema = z.object({
+  account_ref: z.string().default(''),
+  symbol: z.string().default(''),
+  side: z.string().default(''),
+  quantity: z.string().default(''),
+  order_type: z.string().default(''),
+  limit_price: z.string().default(''),
+});
+
+// The form's fields become the propose_order input, checked by the same schema as the AI's.
+async function proposeManually(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
+  const { session, user } = c.var;
+  const form = ManualFormSchema.parse(await c.req.parseBody());
+  const { limit_price, ...order } = form;
+  const input = limit_price.trim() === '' ? order : { ...order, limit_price };
+  const result = await proposeOrder(deps, {
+    userId: user.id,
+    proposer: { actor: 'user', actorDetail: 'manual test', grantId: null },
+    input,
+  });
+  if (result.kind === 'intent') {
+    return c.redirect(`/approvals/${result.intent.id}`);
+  }
+  const candidates =
+    result.kind === 'invalid_input' && result.candidates.length > 0
+      ? ` Did you mean: ${result.candidates.join(', ')}?`
+      : '';
+  return renderPage(
+    c,
+    <ErrorPage
+      title="That order wasn't proposed"
+      message={`${result.reason}${candidates}`}
+      signedIn={{ session, user }}
+      linkHref="/dashboard"
+      linkText="Back to the dashboard"
+    />,
+    result.kind === 'invalid_input' ? 400 : 503,
+  );
+}
+
 async function showApps(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
   const { session, user } = c.var;
   const apps = await listConnectedApps(deps.db, user.id);
@@ -196,5 +256,8 @@ export function registerWebRoutes(app: Hono, deps: Deps): void {
     changeAccountAllowed(deps, c),
   );
   app.get('/apps', requireSession(deps), (c) => showApps(deps, c));
+  app.post('/intents/manual', requireSession(deps), verifyCsrf, (c) =>
+    withNotFoundPage(c, () => proposeManually(deps, c)),
+  );
   app.post('/apps/:id/revoke', requireSession(deps), verifyCsrf, (c) => revokeApp(deps, c));
 }
