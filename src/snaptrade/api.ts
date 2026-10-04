@@ -1,5 +1,7 @@
 import type { Deps } from '../deps.js';
-import { getAccessToken } from './tokens.js';
+import { sha256Hex } from '../lib/crypto.js';
+import { NeedsReauthError } from '../lib/errors.js';
+import { getAccessToken, markNeedsReauth, refreshAccessToken } from './tokens.js';
 
 // The one way we call SnapTrade's data API (PRODUCT_VISION §12.1): bearer token, timeout,
 // capped retries for reads, and logs that never contain bodies or tokens.
@@ -161,14 +163,35 @@ async function readJson(request: SnapTradeRequest, response: Response): Promise<
   }
 }
 
+function isUnauthorized(error: unknown): boolean {
+  return error instanceof SnapTradeApiError && error.status === 401;
+}
+
 // Calls SnapTrade as the given user and returns the parsed JSON body (still `unknown`: the
-// caller validates it with a Zod schema).
+// caller validates it with a Zod schema). A 401 means SnapTrade rejected the token before doing
+// anything, so it is safe to refresh once and retry once, even for writes (V§12.1). A second
+// 401 means the grant is unusable: the user must reconnect.
 export async function snaptradeFetch(
   deps: Deps,
   userId: string,
   request: SnapTradeRequest,
 ): Promise<unknown> {
   const accessToken = await getAccessToken(deps, userId);
-  const response = await sendSnapTradeRequest(deps, accessToken, request);
-  return readJson(request, response);
+  try {
+    return await readJson(request, await sendSnapTradeRequest(deps, accessToken, request));
+  } catch (error) {
+    if (!isUnauthorized(error)) {
+      throw error;
+    }
+  }
+  const freshToken = await refreshAccessToken(deps, userId, sha256Hex(accessToken));
+  try {
+    return await readJson(request, await sendSnapTradeRequest(deps, freshToken, request));
+  } catch (error) {
+    if (!isUnauthorized(error)) {
+      throw error;
+    }
+    await markNeedsReauth(deps, userId, 'token rejected after refresh');
+    throw new NeedsReauthError(undefined, { cause: error });
+  }
 }
