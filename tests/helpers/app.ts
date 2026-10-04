@@ -5,6 +5,7 @@ import { createApp } from '../../src/app.js';
 import type { DatabaseConnection } from '../../src/db/client.js';
 import { sessions } from '../../src/db/schema.js';
 import { createCaches, createLimiters, type Deps } from '../../src/deps.js';
+import { createBackgroundTasks } from '../../src/lib/background.js';
 import { sha256Hex } from '../../src/lib/crypto.js';
 import { createLogger } from '../../src/lib/logger.js';
 import { createTestClock, type TestClock } from './clock.js';
@@ -39,15 +40,17 @@ export async function buildTestApp(
     now: clock.now,
   });
   const logs: string[] = [];
+  const logger = createLogger('debug', (line) => logs.push(line));
   const deps: Deps = {
     env,
     db: connection.db,
     pool: connection.pool,
     fetch: fake.fetch,
     now: clock.now,
-    logger: createLogger('debug', (line) => logs.push(line)),
+    logger,
     caches: createCaches(clock.now),
     limiters: createLimiters(clock.now),
+    background: createBackgroundTasks(logger),
     idTokenKeys: () => createLocalJWKSet(fake.jwks),
   };
   return { app: createApp(deps), deps, fake, clock, logs };

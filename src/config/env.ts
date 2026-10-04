@@ -51,6 +51,9 @@ const envObjectSchema = z.object({
 
   LIVE_TRADING_ENABLED: z.stringbool().default(false),
   LIVE_TRADING_PAPER_ACCOUNTS_ONLY: z.stringbool().default(true),
+
+  // Temporary: log raw webhook bodies to capture the real-webhook test fixture (P12).
+  WEBHOOK_LOG_BODIES: z.stringbool().default(false),
 });
 
 type EnvShape = z.infer<typeof envObjectSchema>;

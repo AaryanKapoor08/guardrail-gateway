@@ -30,8 +30,8 @@ function waitMs(ms: number): Promise<void> {
 }
 
 // Render sends SIGTERM on every deploy. Stop accepting new requests, give in-flight ones up to
-// 10 seconds, let a running sweep finish, then close the database pool so no query is cut off
-// mid-transaction.
+// 10 seconds, let a running sweep and background work finish, then close the database pool so
+// no query is cut off mid-transaction.
 async function shutDown(
   server: ServerType,
   services: { deps: Deps; sweeper: Sweeper },
@@ -41,6 +41,7 @@ async function shutDown(
   deps.logger.info('Shutting down', { event: 'shutdown', reason: signal });
   await Promise.race([closeServer(server), waitMs(SHUTDOWN_GRACE_MS)]);
   await sweeper.stop();
+  await deps.background.settle();
   await deps.pool.end();
   deps.logger.info('Shutdown complete', { event: 'shutdown' });
   process.exit(0);

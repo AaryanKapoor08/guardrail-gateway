@@ -16,6 +16,7 @@ import { contentSecurityPolicy } from './web/csp.js';
 import { limitPerIp } from './web/rate-limit.js';
 import { registerWebRoutes } from './web/routes.js';
 import { registerSettingsRoutes } from './web/settings-routes.js';
+import { registerWebhookRoutes } from './webhooks/routes.js';
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
 
@@ -62,6 +63,7 @@ export function createApp(deps: Deps): Hono {
   registerTokenRoutes(app, deps);
   registerRevokeRoutes(app, deps);
   registerMcpRoutes(app, deps);
+  registerWebhookRoutes(app, deps);
   registerLoginRoutes(app, deps);
   registerWebRoutes(app, deps);
   registerSettingsRoutes(app, deps);

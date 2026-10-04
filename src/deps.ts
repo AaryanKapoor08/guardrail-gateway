@@ -2,6 +2,7 @@ import { createRemoteJWKSet, type JWTVerifyGetKey } from 'jose';
 import type pg from 'pg';
 import type { Env } from './config/env.js';
 import { createDb, type Database } from './db/client.js';
+import { type BackgroundTasks, createBackgroundTasks } from './lib/background.js';
 import { createLogger, type Logger } from './lib/logger.js';
 import { createRateLimiter, type RateLimiter } from './lib/ratelimit.js';
 import { CLIENT_METADATA_MAX_TTL_MS, type ClientMetadata } from './oauth-server/cimd.js';
@@ -47,6 +48,7 @@ export type Deps = {
   readonly logger: Logger;
   readonly caches: Caches;
   readonly limiters: Limiters;
+  readonly background: BackgroundTasks;
   readonly idTokenKeys: IdTokenKeySource;
 };
 
@@ -102,6 +104,7 @@ export function createDeps(env: Env): Deps {
     logger,
     caches: createCaches(now),
     limiters: createLimiters(now),
+    background: createBackgroundTasks(logger),
     idTokenKeys: createRemoteKeySource(),
   };
 }
