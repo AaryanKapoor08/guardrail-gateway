@@ -39,7 +39,7 @@ Phase ↔ milestone map: P0 prerequisites · P1–P2 = M0 · P3–P4 = M1 · P5 
 
 ### Definition of Done (every phase)
 
-- [ ] `npm run typecheck` passes with zero errors
+- [ ] `npm run check` passes (Biome lint + TypeScript 7, zero errors)
 - [ ] `npm test` passes (unit + integration), and CI is green on the pushed branch
 - [ ] Every checkpoint item for the phase is ticked
 - [ ] `git diff` reviewed for secrets before each commit
@@ -164,8 +164,9 @@ docker-compose.yml           postgres:17 for tests (port 5433)
 ```
 npm init -y
 npm i hono @hono/node-server zod pg drizzle-orm jose
-npm i -D typescript @types/node@24 @types/pg tsx vitest drizzle-kit
+npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/biome
 ```
+(Checked 2026-10-03: typescript 7.0.2 (native compiler), hono 4.13, zod 4.6, drizzle-orm 0.45, vitest 5.0, jose 6.2, tsx 4.23, @biomejs/biome 2.5. Exact versions are pinned by `package-lock.json`.)
 
 **Tasks:**
 1. `package.json`: `"type": "module"`, `"engines": { "node": ">=24 <25" }`, scripts:
@@ -173,12 +174,21 @@ npm i -D typescript @types/node@24 @types/pg tsx vitest drizzle-kit
    - `build` = `tsc -p tsconfig.build.json`
    - `start` = `node dist/server.js`
    - `typecheck` = `tsc --noEmit`
+   - `lint` = `biome check .`, `format` = `biome check --write .`
+   - `check` = `npm run lint && npm run typecheck`
    - `test` = `vitest run`, `test:watch` = `vitest`
    - `db:generate` = `drizzle-kit generate`, `db:migrate` = `tsx src/db/migrate.ts`
    - `db:test:up` = `docker compose up -d db-test`
 2. `.nvmrc` = `24`.
-3. `tsconfig.json`: `strict: true`, `target: "ES2023"`, `module`/`moduleResolution: "NodeNext"`, `jsx: "react-jsx"`, `jsxImportSource: "hono/jsx"`, `noUncheckedIndexedAccess: true`, `verbatimModuleSyntax: true`, `skipLibCheck: true`.
-   `tsconfig.build.json` extends it with `outDir: "dist"`, `rootDir: "src"`, `include: ["src"]`.
+3. `tsconfig.json` (TypeScript 7; written out explicitly rather than relying on the TS 6/7 defaults):
+   - `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`, `noImplicitOverride: true`, `verbatimModuleSyntax: true`, `erasableSyntaxOnly: true`
+   - `target: "es2024"`, `module`/`moduleResolution: "nodenext"`
+   - **`types: ["node"]`**: TS 6+ defaults `types` to `[]`, so without this Node globals like `process` and `Buffer` won't type-check.
+   - `jsx: "react-jsx"`, `jsxImportSource: "hono/jsx"`
+   - `skipLibCheck: true`, `include: ["src", "tests", "scripts", "*.config.ts"]`
+   `tsconfig.build.json` extends it with `outDir: "dist"`, `rootDir: "src"`, `include: ["src"]`, `noEmit: false`.
+   If TS 7 rejects any option, check the TS 7 release notes, fix it, and record the change in `DECISIONS.md`.
+3b. `biome.json`: formatter (2-space indent, single quotes, semicolons, line width 100), linter `recommended` rules, plus the floating-promise rule (check the installed Biome version's rule name, e.g. `noFloatingPromises`). Ignore `dist`, `coverage`, `src/db/migrations`.
 4. `src/config/env.ts`: Zod schema for every variable in V§16 plus `TEST_DATABASE_URL` (optional).
    - Booleans via `z.stringbool()`. `PORT` coerced to a number. URLs validated.
    - `TOKEN_ENCRYPTION_KEY` must base64-decode to **exactly 32 bytes**.
@@ -193,13 +203,13 @@ npm i -D typescript @types/node@24 @types/pg tsx vitest drizzle-kit
 9. `src/server.ts`: `loadEnv()` (exit 1 on failure with the readable message), `createDeps`, `serve({ fetch: app.fetch, port })`. On **SIGTERM/SIGINT**: stop accepting, wait ≤ 10s for in-flight requests, `pool.end()`, exit.
 10. `docker-compose.yml`: service `db-test` = `postgres:17`, port `5433:5432`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_DB=guardrail_test`, `tmpfs: /var/lib/postgresql/data`.
 11. `vitest.config.ts`: `test.include: ["tests/**/*.test.ts"]`, `fileParallelism: false` (integration tests share one DB), `testTimeout: 20000`.
-12. `.github/workflows/ci.yml`: on push and PR. Ubuntu, Node 24 (`actions/setup-node` with `node-version-file: .nvmrc`), service `postgres:17` on 5433, `npm ci`, `npm run typecheck`, `npm test` with `TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5433/guardrail_test` and dummy-but-valid values for the other required env vars (a CI-only random key; never real secrets).
+12. `.github/workflows/ci.yml`: on push and PR. Ubuntu, Node 24 (`actions/setup-node` with `node-version-file: .nvmrc`), service `postgres:17` on 5433, `npm ci`, `npm run check` (lint + typecheck), `npm test` with `TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5433/guardrail_test` and dummy-but-valid values for the other required env vars (a CI-only random key; never real secrets).
 13. Tests:
     - `tests/unit/env.test.ts`: valid env parses; missing var → error names it; 31-byte key rejected; mismatched redirect origin rejected; values never appear in error messages.
     - `tests/integration/health.test.ts`: `/health` → 200 with test DB.
 
 **Checkpoint:**
-- [ ] `npm run typecheck` → 0 errors
+- [ ] `npm run check` → 0 lint errors, 0 type errors
 - [ ] `npm run db:test:up && npm test` → env + health tests pass
 - [ ] `npm run dev` with real `.env` → `curl localhost:3000/health` returns `{"status":"ok"}` (Neon reachable)
 - [ ] Starting with `TOKEN_ENCRYPTION_KEY` removed prints a readable error and exits 1

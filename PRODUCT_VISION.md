@@ -775,7 +775,8 @@ CREATE TRIGGER audit_guard BEFORE UPDATE OR DELETE ON audit_events
 | Part | Choice | Why |
 |---|---|---|
 | Runtime | **Node.js 24 LTS** | Node 20 is end of life. 24 is Active LTS until April 2028. |
-| Language | TypeScript (strict, ESM) | Strong MCP/OAuth library support, and types catch mistakes. |
+| Language | **TypeScript 7** (strict, ESM, `erasableSyntaxOnly`) | Strong MCP/OAuth library support, and types catch mistakes. TS 7 is the native (much faster) compiler. `erasableSyntaxOnly` keeps the code plain JavaScript plus type annotations (no enums or namespaces). |
+| Lint + format | **Biome** | One fast tool for formatting and linting, so style is never debated. Catches floating promises. Coding standards are in `CLAUDE.md`. |
 | Web framework | **Hono 4** + `@hono/node-server` | Small and readable. Official MCP SDK v2 adapter. Built-in `csrf()` and `secureHeaders()`. |
 | UI | Server-rendered **Hono JSX**, plain HTML forms, one small CSS file, **no client JavaScript** | One service, no frontend build, smaller attack surface (strict CSP). |
 | MCP | **`@modelcontextprotocol/server` v2 + `@modelcontextprotocol/hono`** | Official SDK. Stateless handler, bearer gate, serves old and new protocol eras. |

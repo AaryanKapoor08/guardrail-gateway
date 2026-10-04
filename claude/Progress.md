@@ -11,7 +11,8 @@ Last Updated: 2026-10-03
 ## Session Notes
 
 - 2026-10-03: Planning complete. PRODUCT_VISION.md (final vision, cross-checked twice against live SnapTrade, Claude-connector, and MCP docs) and claude/BuildFlow.md written. Repo created and pushed. .env created locally (git-ignored) with TOKEN_ENCRYPTION_KEY pre-generated. Waiting on Phase 0 human tasks.
-- 2026-10-03: Env verified live. Neon OK (Postgres 17.11, pooled, us-east-1, transactions OK through pooler, sslmode switched to verify-full). SnapTrade discovery + JWKS OK. Client id+secret ACCEPTED by the token endpoint (wrong-secret control rejected with invalid_client). Consumer key set (50 chars), but it can only be verified with a real webhook (P12). Redirect URI registration is verified by the first real sign-in (P3). Still TODO: install Node 24 (currently 22.16), start Docker Desktop, SnapTrade Personal test workspace with Sandbox, Render account.
+- 2026-10-03: Env verified live. Neon OK (Postgres 17.11, pooled, us-east-1, transactions OK through pooler, sslmode switched to verify-full). SnapTrade discovery + JWKS OK. Client id+secret ACCEPTED by the token endpoint (wrong-secret control rejected with invalid_client). Consumer key set (50 chars), but it can only be verified with a real webhook (P12). Redirect URI registration is verified by the first real sign-in (P3). Still TODO at that point: Node 24, Docker.
+- 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
 
 ---
 
@@ -19,8 +20,8 @@ Last Updated: 2026-10-03
 
 ### PHASE 0 — Accounts, Keys, Machine (human tasks) [in progress]
 
-- [ ] `node -v` → `v24.*`
-- [ ] `docker info` succeeds
+- [x] `node -v` → `v24.*`
+- [x] `docker info` succeeds
 - [x] SnapTrade Test OAuth app exists with the localhost redirect URI; client id + secret saved in `.env`
 - [x] Consumer key saved in `.env`
 - [ ] SnapTrade Personal test workspace has the Sandbox brokerage connected
@@ -30,7 +31,7 @@ Last Updated: 2026-10-03
 
 ### PHASE 1 — Project Scaffold (M0, part 1) [not started]
 
-- [ ] `npm run typecheck` → 0 errors
+- [ ] `npm run check` → 0 lint errors, 0 type errors
 - [ ] `npm run db:test:up && npm test` → env + health tests pass
 - [ ] `npm run dev` with real `.env` → `curl localhost:3000/health` returns `{"status":"ok"}` (Neon reachable)
 - [ ] Starting with `TOKEN_ENCRYPTION_KEY` removed prints a readable error and exits 1
