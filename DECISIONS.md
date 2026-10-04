@@ -159,6 +159,7 @@ Every non-obvious choice: **what** we chose, **why**, and the **alternatives** c
 - **Host and Origin checks** use the SDK helpers with `APP_BASE_URL`'s host name. A missing Origin passes (servers like Claude's send none); a browser page on another origin is refused, so the MCP Inspector must be used in its default proxy mode.
 - **Server identity** `{ name: 'guardrail-gateway', version }` reads `version` from `package.json` once at startup (two levels up from both `src/mcp` and `dist/mcp`).
 - **Dashboard MCP box** already showed the connector URL and the Claude / Claude Code steps (P4); it now links to Connected AI apps.
+- **Startup notice:** `createMcpHandler` prints one plain-text `console.warn` that `responseMode: 'json'` drops mid-call notifications. Expected: our tools send none (they return one result each). It bypasses our JSON logger but contains nothing sensitive.
 - **Alternatives:** letting the SDK report thrown errors as-is (leaks internals); an HTTP-level 429 for the overall limit (V§11.1 asks for a clear tool error instead).
 
 ### D22 — Phase 11 dashboard controls details (2026-10-04)
