@@ -157,7 +157,7 @@ export function approvalUrlFor(appBaseUrl: string, intentId: string): string {
 }
 
 // "BUY 2 VFV.TO", used in email subjects and short summaries.
-export function shortSummary(intent: IntentView): string {
+export function shortSummary(intent: Pick<IntentView, 'side' | 'quantity' | 'symbol'>): string {
   return `${intent.side.toUpperCase()} ${intent.quantity} ${intent.symbol}`;
 }
 
