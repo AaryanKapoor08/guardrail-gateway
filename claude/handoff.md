@@ -10,8 +10,8 @@
 | 1 | P1 Scaffold + P2 Schema/foundations | **done** (82 tests, CI green) |
 | 2 | P3 Sign-in + P4 Accounts sync/dashboard | **done** (167 tests, CI green) |
 | 3 | P6 Token lifecycle + P7 Policy engine/state machine | **done** (503 tests, CI green) |
-| 4 | P8 Intents, approvals, paper executor | running |
-| 5 | P9 OAuth authorization server for MCP | pending |
+| 4 | P8 Intents, approvals, paper executor | **done** (563 tests, CI green) |
+| 5 | P9 OAuth authorization server for MCP | running |
 | 6 | P10 MCP server + tools | pending |
 | 7 | P11 Dashboard polish | pending |
 | 8 | P12 Webhooks | pending |
@@ -21,6 +21,7 @@
 **Skipped tonight:** P5 (deploy + real API spike: needs Aaryan + Render), P13 (live trading: SnapTrade hasn't enabled `trade`).
 
 ## Human tasks for tomorrow (append as batches finish)
+- P8: run `npx tsx scripts/demo-flow.ts`-style propose against the dev DB, approve in the browser, see the paper position; tick the V§9.2 approval-page checklist.
 - P3: real sign-in at http://localhost:3000 with the SnapTrade Personal test user; click Deny once.
 - P5: create a Render account, then deploy (controller does it via the API with `RENDER_API_KEY`); UptimeRobot monitor; real API capability spike; apply any shape fixes.
 - P10: add the connector in Claude web + Claude Code; approve one order.
@@ -42,3 +43,4 @@
 - 2026-10-04: P4 done: 167 tests, CI green, decisions D16.
 - 2026-10-04: P6 done: 178 tests, CI green, decisions D17.
 - 2026-10-04: P7 done: 503 tests, CI green, decisions D18.
+- 2026-10-04: P8 done: 563 tests, CI green, decisions D19.
