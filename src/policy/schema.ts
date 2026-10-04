@@ -21,14 +21,16 @@ const PLAIN_DECIMAL = /^\d+(\.\d+)?$/;
 export const SYMBOL_PATTERN = /^[A-Z0-9.-]{1,20}$/;
 
 function moneyLimitSchema(ceiling: string) {
-  return z
-    .string()
-    .trim()
-    // `abort` stops the later checks, which need a valid decimal string to work with.
-    .regex(PLAIN_DECIMAL, { error: 'must be a plain number like 100 or 99.50', abort: true })
-    .refine((value) => isPositive(value), 'must be more than 0')
-    .refine((value) => decimalPlaces(value) <= 2, 'must have at most 2 decimal places')
-    .refine((value) => cmp(value, ceiling) <= 0, `must be at most ${ceiling}`);
+  return (
+    z
+      .string()
+      .trim()
+      // `abort` stops the later checks, which need a valid decimal string to work with.
+      .regex(PLAIN_DECIMAL, { error: 'must be a plain number like 100 or 99.50', abort: true })
+      .refine((value) => isPositive(value), 'must be more than 0')
+      .refine((value) => decimalPlaces(value) <= 2, 'must have at most 2 decimal places')
+      .refine((value) => cmp(value, ceiling) <= 0, `must be at most ${ceiling}`)
+  );
 }
 
 const symbolSchema = z
