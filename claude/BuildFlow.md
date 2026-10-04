@@ -141,7 +141,7 @@ docker-compose.yml           postgres:17 for tests (port 5433)
 4. **SnapTrade Personal** workspace (the *test user*): connect the **SnapTrade Sandbox** brokerage. Use a different login from the Commercial account if the dashboard requires it.
 5. **Trade scope:** confirm the support email asking to enable `trade` for the Test app has been sent (V§21 Q1).
 6. **Neon** (https://neon.tech, sign in with GitHub): create project `guardrail-gateway` and pick region **US East (N. Virginia)** from the dropdown. **No AWS account or setup needed.** Neon hosts on AWS internally, and the region label is just where the database lives. It should match the Render region (Virginia) for low latency. Copy the **pooled** connection string (Connection pooling toggle on; host contains `-pooler`) into `.env` as `DATABASE_URL`, and change `sslmode=require` to **`sslmode=verify-full`** (node-postgres treats `require` as `verify-full` today and will weaken it to libpq semantics in pg v9; being explicit keeps full certificate verification).
-7. **Render** account (https://render.com), connected to GitHub. Used in P5.
+7. **Render** account (https://render.com, free), connected to GitHub. Used in P5. Also a free **UptimeRobot** account (https://uptimerobot.com) for the keep-awake ping in P5.
 8. *Optional, recommended:* a domain (≈ $10–15/yr) and a **Resend** account with that domain verified (needed to email anyone but yourself).
 9. Fill `.env` (template already created; `TOKEN_ENCRYPTION_KEY` is pre-generated).
 
@@ -152,7 +152,7 @@ docker-compose.yml           postgres:17 for tests (port 5433)
 - [ ] Consumer key saved in `.env`
 - [ ] SnapTrade Personal test workspace has the Sandbox brokerage connected
 - [ ] Neon pooled `DATABASE_URL` saved in `.env`
-- [ ] Render account exists and is linked to GitHub
+- [ ] Render account (free) exists and is linked to GitHub; UptimeRobot account (free) created
 
 ---
 
@@ -373,7 +373,8 @@ npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/b
    - Build `npm ci && npm run build`.
    - Start `node dist/db/migrate.js && node dist/server.js`.
    - Health check path `/health`. Region **Virginia (US East)** (same as Neon).
-   - Instance: **Free for now** (switch to Starter in P10/P14, V§15).
+   - Instance: **Free** (the whole project runs on the free tier, V§15). **Keep only this one free service in the Render workspace** (750 free hours/month cover exactly one always-awake service).
+   - **Keep-awake monitor:** create a free **UptimeRobot** HTTP monitor (or a cron-job.org job) for `https://<service>.onrender.com/health` every **5 minutes**. This stops the 15-minute idle sleep, and gives an uptime history for free.
    - Env vars = `.env` values, but with `NODE_ENV=production`, `APP_BASE_URL=https://<service>.onrender.com`, and `SNAPTRADE_REDIRECT_URI=https://<service>.onrender.com/oauth/snaptrade/callback`.
 3. SnapTrade dashboard → Test OAuth app → **add** the production redirect URI (keep localhost).
 4. Sign in on the public URL.
@@ -388,6 +389,7 @@ npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/b
 
 **Checkpoint:**
 - [ ] `https://<service>.onrender.com/health` → `ok`
+- [ ] Keep-awake monitor (UptimeRobot / cron-job.org) pinging `/health` every 5 minutes, showing **up**
 - [ ] Sign-in works end to end on the public URL
 - [ ] Spike results recorded for Q3, Q6, Q9, Q11 (including exact symbol format for TSX, e.g. `VFV.TO`)
 - [ ] Aaryan informed of results and any fallback chosen
@@ -622,7 +624,7 @@ npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/b
    - revoked grant → 401
    - rate limit: the 11th `propose_order` in a minute → rate-limit error result
 7. ⛔ **GATE (V§21 Q5):** connect from **Claude web** and **Claude Code** against the deployed URL. Read the `oauth.client_seen` logs to confirm the hosted-Claude `client_id` URL host is allowlisted. If CIMD fails, stop and tell Aaryan. The DCR fallback per V§11.3 is a scoped mini-phase.
-8. Switch the Render instance to **Starter (always-on)** before real Claude testing (V§0 C6), so OAuth endpoints answer within Claude's 10s limits.
+8. Before real Claude testing, confirm the keep-awake monitor (P5) shows the service **up for the last 24 hours with no gaps**, so OAuth endpoints answer within Claude's 10s limits (V§0 C6). Test: time `curl https://<host>/.well-known/oauth-authorization-server` after 20+ minutes of no human traffic; it must answer in < 2s.
 
 **Checkpoint:**
 - [ ] MCP integration tests pass
@@ -725,7 +727,7 @@ npm i -D typescript@7 @types/node@24 @types/pg tsx vitest drizzle-kit @biomejs/b
 3. `API_FEEDBACK.md` complete (every SnapTrade surprise + workaround), written as constructive feedback to SnapTrade.
 4. `THREAT_MODEL.md`: assets, attackers (malicious content → prompt injection, stolen MCP token, phishing client, webhook forger, CSRF/clickjacking, insider DB read), mitigations → V§13.
 5. Demo video script (2–3 min) in `docs/demo-script.md`: sign in → allow account → policy → connect Claude → propose rejected (over limit) → propose OK → approve → FILLED → kill switch → audit log.
-6. Final pass: re-run the full V§19.2 manual checklist on the deployed URL, a fresh sign-up with a second test user, confirm the Render instance is **Starter**, and confirm test-app user slots are free for reviewers.
+6. Final pass: re-run the full V§19.2 manual checklist on the deployed URL, a fresh sign-up with a second test user, confirm the keep-awake monitor shows ≥ 99% uptime for the past 7 days and the Render workspace still has only one free service, and confirm test-app user slots are free for reviewers.
 7. Tag `v1.0.0`.
 
 **Checkpoint:**
@@ -761,7 +763,7 @@ Pass 1: every V§ requirement → mapped to the phase that builds it and the tes
 | Webhooks: canonical JSON, signature, dedupe, stale, async, re-sync | P12 | `webhooks.test.ts` + real fixture ⛔ |
 | Live: gates, place once, UNKNOWN, tracking, impact preview | P13 | live tests (conditional) ⛔ |
 | Secure headers / clickjacking (G12) | P3 | header assertions in `oidc-login.test.ts` |
-| Paid always-on hosting before Claude testing (C6) | P10 | checkpoint item |
+| $0 always-awake hosting (Render free + 5-min ping) before Claude testing (C6) | P5, P10 | monitor + timed curl checkpoint |
 | Docs, threat model, demo | P14 | checkpoint |
 
 Pass 2: ordering dependencies (each phase only uses what earlier phases built):

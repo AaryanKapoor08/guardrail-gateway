@@ -23,9 +23,11 @@ Every non-obvious choice: **what** we chose, **why**, and the **alternatives** c
 - **Why:** instant revocation (kill switch, revoke app, disconnect, delete) and no signing keys to manage. Cost: one indexed DB lookup per MCP request. SHA-256 is appropriate for high-entropy random tokens.
 - **Alternatives:** signed JWT access tokens + deny-list.
 
-### D5 — Always-on hosting (Render Starter) while under review (2026-10-03)
-- **Why:** free Render instances sleep after 15 minutes and take 30–60 seconds to wake. Claude allows 10 seconds for OAuth discovery and token endpoints, so a sleeping server breaks "Add connector".
-- **Alternatives:** Render free (fails Claude's timeouts), Vercel Hobby (free, no sleep, but serverless: no in-process sweeper, per-instance caches, more concepts to explain).
+### D5 — $0 hosting: Render free + keep-awake ping (2026-10-03)
+- **What:** Render free web service, plus a free uptime monitor requesting `/health` every 5 minutes. Neon free for Postgres.
+- **Why:** free Render instances sleep after 15 idle minutes and take 30–60s to wake, but Claude allows only 10s for OAuth discovery and token endpoints. A 5-minute ping prevents sleep. Render's 750 free hours/month cover one service for a full 31-day month (744h), and its docs don't prohibit keep-alive traffic. Free instances can restart without notice; our design tolerates that (state in Postgres, idempotent background tasks). This keeps the simple "one always-running server" design at no cost.
+- **Constraints we accept:** only one free Render service in the workspace (two always-awake services would exceed the hours, and Render suspends free services until next month); no SMTP ports (we use Resend over HTTPS).
+- **Alternatives:** Render Starter ~$7/mo (same behaviour without the ping; not needed). Vercel Hobby (free, no sleep, but serverless: free cron runs once a day so there's no 60s sweeper, and in-memory caches and rate limits must move to the database). Plain Render free without a ping (fails Claude's timeouts).
 
 ### D6 — Webhooks are re-sync hints; stale-but-signed events are accepted and flagged (2026-10-03)
 - **Why:** SnapTrade retries failed deliveries starting 30 minutes later, so a strict 5-minute freshness rejection would drop every retry. Because processing only ever re-reads state from the API, a replay is harmless. Dedupe by `webhookId` stops exact replays.

@@ -68,7 +68,7 @@ No trade recommendations · no autonomous trading · no options/crypto/funds/mar
 | Email | Resend HTTP API via fetch (optional) |
 | Tests | Vitest; real Postgres in Docker (local) / service container (CI); fake SnapTrade via injected fetch |
 | CI | GitHub Actions (typecheck + tests) |
-| Hosting | Render web service (Starter, always-on, during review) + Neon, same region |
+| Hosting | **$0:** Render free web service kept awake by a 5-minute uptime ping + Neon free, same region |
 
 ---
 

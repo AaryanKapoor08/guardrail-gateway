@@ -26,7 +26,7 @@ Last Updated: 2026-10-03
 - [x] Consumer key saved in `.env`
 - [ ] SnapTrade Personal test workspace has the Sandbox brokerage connected
 - [x] Neon pooled `DATABASE_URL` saved in `.env`
-- [ ] Render account exists and is linked to GitHub
+- [ ] Render account (free) exists and is linked to GitHub; UptimeRobot account (free) created
 - Notes:
 
 ### PHASE 1 — Project Scaffold (M0, part 1) [not started]
@@ -71,6 +71,7 @@ Last Updated: 2026-10-03
 ### PHASE 5 — Deploy Early + API Capability Spike (M2) [not started]
 
 - [ ] `https://<service>.onrender.com/health` → `ok`
+- [ ] Keep-awake monitor (UptimeRobot / cron-job.org) pinging `/health` every 5 minutes, showing **up**
 - [ ] Sign-in works end to end on the public URL
 - [ ] Spike results recorded for Q3, Q6, Q9, Q11 (including exact symbol format for TSX, e.g. `VFV.TO`)
 - [ ] Aaryan informed of results and any fallback chosen

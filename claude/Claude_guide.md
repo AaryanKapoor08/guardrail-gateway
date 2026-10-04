@@ -57,7 +57,7 @@ Never mix a refactor with a feature. Finish the feature, commit, then `refactor(
 - `.gitignore` + branching: day one (done)
 - CI (GitHub Actions): Phase 1
 - Docker (test Postgres only): Phase 1
-- Deploy (Render + Neon): Phase 5; always-on instance before real Claude testing (Phase 10)
+- Deploy (Render free + Neon free + 5-minute keep-awake ping): Phase 5. Verified awake before real Claude testing (Phase 10). Total hosting cost: $0
 - Secrets never in repo — env validated with Zod at startup; the app refuses to start on bad config.
 
 ### H9 — Structured Logging
