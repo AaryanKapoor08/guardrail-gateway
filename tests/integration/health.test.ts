@@ -1,31 +1,22 @@
-import { afterAll, describe, expect, it } from 'vitest';
-import { createApp } from '../../src/app.js';
-import { createDb } from '../../src/db/client.js';
-import type { Deps } from '../../src/deps.js';
-import { createLogger } from '../../src/lib/logger.js';
-import { buildTestEnv, testDatabaseUrl } from '../helpers/env.js';
-
-function buildDeps(databaseUrl: string): Deps {
-  const { pool, db } = createDb(databaseUrl);
-  return {
-    env: buildTestEnv(),
-    db,
-    pool,
-    fetch: () => Promise.reject(new Error('network is disabled in tests')),
-    now: () => new Date('2026-10-03T14:00:00Z'),
-    logger: createLogger('error', () => {}),
-  };
-}
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createDb, type DatabaseConnection } from '../../src/db/client.js';
+import { buildTestApp } from '../helpers/app.js';
+import { setupTestDb } from '../helpers/db.js';
+import { testDatabaseUrl } from '../helpers/env.js';
 
 describe('GET /health', () => {
-  const deps = buildDeps(testDatabaseUrl());
+  let connection: DatabaseConnection;
+
+  beforeAll(async () => {
+    connection = await setupTestDb();
+  });
 
   afterAll(async () => {
-    await deps.pool.end();
+    await connection.pool.end();
   });
 
   it('reports ok when the database answers', async () => {
-    const app = createApp(deps);
+    const { app } = await buildTestApp(connection);
 
     const response = await app.request('/health');
 
@@ -34,9 +25,9 @@ describe('GET /health', () => {
   });
 
   it('reports degraded when the database is unreachable', async () => {
-    const brokenDeps = buildDeps(testDatabaseUrl());
-    await brokenDeps.pool.end();
-    const app = createApp(brokenDeps);
+    const closedConnection = createDb(testDatabaseUrl());
+    await closedConnection.pool.end();
+    const { app } = await buildTestApp(closedConnection);
 
     const response = await app.request('/health');
 
