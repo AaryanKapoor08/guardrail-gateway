@@ -2,6 +2,7 @@ import { type ServerType, serve } from '@hono/node-server';
 import { createApp } from './app.js';
 import { type Env, loadDotEnvFileIfPresent, loadEnv } from './config/env.js';
 import { createDeps, type Deps } from './deps.js';
+import { type Sweeper, startSweeper } from './jobs/sweeper.js';
 
 const SHUTDOWN_GRACE_MS = 10_000;
 
@@ -29,10 +30,17 @@ function waitMs(ms: number): Promise<void> {
 }
 
 // Render sends SIGTERM on every deploy. Stop accepting new requests, give in-flight ones up to
-// 10 seconds, then close the database pool so no query is cut off mid-transaction.
-async function shutDown(server: ServerType, deps: Deps, signal: string): Promise<void> {
+// 10 seconds, let a running sweep finish, then close the database pool so no query is cut off
+// mid-transaction.
+async function shutDown(
+  server: ServerType,
+  services: { deps: Deps; sweeper: Sweeper },
+  signal: string,
+): Promise<void> {
+  const { deps, sweeper } = services;
   deps.logger.info('Shutting down', { event: 'shutdown', reason: signal });
   await Promise.race([closeServer(server), waitMs(SHUTDOWN_GRACE_MS)]);
+  await sweeper.stop();
   await deps.pool.end();
   deps.logger.info('Shutdown complete', { event: 'shutdown' });
   process.exit(0);
@@ -47,13 +55,15 @@ function main(): void {
     deps.logger.info(`Server listening on port ${info.port}`, { event: 'startup' });
   });
 
+  const sweeper = startSweeper(deps);
+
   let isShuttingDown = false;
   const onSignal = (signal: string): void => {
     if (isShuttingDown) {
       return;
     }
     isShuttingDown = true;
-    shutDown(server, deps, signal).catch((error: unknown) => {
+    shutDown(server, { deps, sweeper }, signal).catch((error: unknown) => {
       deps.logger.logError('[Server] shutdown failed', error);
       process.exit(1);
     });
