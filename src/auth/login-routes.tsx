@@ -1,5 +1,6 @@
 import type { Context, Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { z } from 'zod';
 import type { Deps } from '../deps.js';
 import { safeEqual } from '../lib/crypto.js';
 import { syncUserConnectionsAndAccounts } from '../snaptrade/sync.js';
@@ -25,11 +26,18 @@ function signInAgainPage(c: Context, title: string, message: string) {
   );
 }
 
+// `mcp_request` comes from /oauth/authorize: after sign-in, the user continues to the AI app's
+// consent page instead of the dashboard.
+function mcpAuthRequestIdFrom(c: Context): string | null {
+  const parsed = z.uuid().safeParse(c.req.query('mcp_request'));
+  return parsed.success ? parsed.data : null;
+}
+
 async function startLogin(deps: Deps, c: Context): Promise<Response> {
   try {
     const { cookieValue, authorizeUrl } = await startLoginAttempt(deps, {
       returnTo: safeReturnTo(c.req.query('return_to')),
-      mcpAuthRequestId: null,
+      mcpAuthRequestId: mcpAuthRequestIdFrom(c),
     });
     setCookie(c, LOGIN_COOKIE, cookieValue, {
       httpOnly: true,
@@ -96,7 +104,11 @@ async function finishLogin(deps: Deps, c: Context): Promise<Response> {
     const { userId, sessionId } = await completeSignIn(deps, { attempt, code, previousSessionId });
     setSessionCookie(c, deps.env, sessionId);
     await syncAfterSignIn(deps, userId);
-    return c.redirect(safeReturnTo(attempt.returnTo));
+    return c.redirect(
+      attempt.mcpAuthRequestId === null
+        ? safeReturnTo(attempt.returnTo)
+        : `/oauth/authorize/resume?request=${attempt.mcpAuthRequestId}`,
+    );
   } catch (error) {
     // Handled: the code exchange or id_token check failed. Nothing was saved (one transaction).
     deps.logger.logError('[Login] sign-in failed', error, { route: '/oauth/snaptrade/callback' });
