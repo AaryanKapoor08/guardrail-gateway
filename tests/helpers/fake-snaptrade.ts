@@ -23,6 +23,7 @@ export type RecordedRequest = {
 };
 
 export type FakeResponse = {
+  // 0 simulates a network failure: fetch throws instead of answering.
   readonly status: number;
   readonly body?: unknown;
   readonly headers?: Record<string, string>;
@@ -56,6 +57,7 @@ export type FakeSnapTrade = {
   // Simulates the user approving on SnapTrade's consent screen; returns the code for the callback.
   readonly authorize: (authorizeUrl: string, options?: AuthorizeOptions) => string;
   readonly failNextTokenRequest: (response: FakeResponse) => void;
+  readonly failNextRevocation: (response: FakeResponse) => void;
   // Every access token issued so far stops working (SnapTrade would answer 401).
   readonly invalidateAccessTokens: () => void;
   readonly currentRefreshTokens: () => string[];
@@ -107,6 +109,7 @@ export async function createFakeSnapTrade(options: {
   // refresh token -> sub. Using a refresh token removes it (rotation).
   const refreshTokens = new Map<string, string>();
   const tokenFailures: FakeResponse[] = [];
+  const revocationFailures: FakeResponse[] = [];
   const apiRoutes: ApiRoute[] = [];
   const apiFailures: { pattern: RegExp; response: FakeResponse; remaining: number }[] = [];
 
@@ -122,6 +125,9 @@ export async function createFakeSnapTrade(options: {
     authorize,
     failNextTokenRequest: (response) => {
       tokenFailures.push(response);
+    },
+    failNextRevocation: (response) => {
+      revocationFailures.push(response);
     },
     invalidateAccessTokens: () => accessTokens.clear(),
     currentRefreshTokens: () => [...refreshTokens.keys()],
@@ -237,6 +243,10 @@ export async function createFakeSnapTrade(options: {
   }
 
   function handleRevocation(request: RecordedRequest): FakeResponse {
+    const failure = revocationFailures.shift();
+    if (failure !== undefined) {
+      return failure;
+    }
     const form = new URLSearchParams(request.body);
     refreshTokens.delete(form.get('token') ?? '');
     return { status: 200 };
@@ -306,7 +316,11 @@ export async function createFakeSnapTrade(options: {
       body: await request.text(),
     };
     requests.push(recorded);
-    return jsonResponse(await route(recorded));
+    const response = await route(recorded);
+    if (response.status === 0) {
+      throw new TypeError('fetch failed (simulated network error)');
+    }
+    return jsonResponse(response);
   }
 
   return fake;
