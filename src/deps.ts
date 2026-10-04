@@ -5,9 +5,12 @@ import { createDb, type Database } from './db/client.js';
 import { createLogger, type Logger } from './lib/logger.js';
 import { createTtlCache, type TtlCache } from './snaptrade/cache.js';
 import { METADATA_TTL_MS, type SnapTradeMetadata } from './snaptrade/discovery.js';
+import { ACCOUNT_SYNC_TTL_MS } from './snaptrade/sync.js';
 
 export type Caches = {
   readonly snaptradeMetadata: TtlCache<'metadata', SnapTradeMetadata>;
+  // user id -> synced recently. Present means "connections and accounts are fresh enough".
+  readonly accountSyncs: TtlCache<string, true>;
 };
 
 // Returns the key set used to check SnapTrade's id_token signatures. Production downloads
@@ -30,6 +33,7 @@ export type Deps = {
 export function createCaches(now: () => Date): Caches {
   return {
     snaptradeMetadata: createTtlCache({ ttlMs: METADATA_TTL_MS, now }),
+    accountSyncs: createTtlCache({ ttlMs: ACCOUNT_SYNC_TTL_MS, now }),
   };
 }
 

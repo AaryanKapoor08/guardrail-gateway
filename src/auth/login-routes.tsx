@@ -2,6 +2,7 @@ import type { Context, Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { Deps } from '../deps.js';
 import { safeEqual } from '../lib/crypto.js';
+import { syncUserConnectionsAndAccounts } from '../snaptrade/sync.js';
 import { ErrorPage } from '../web/pages/error.js';
 import { renderPage } from '../web/render.js';
 import { verifyCsrf } from './csrf.js';
@@ -52,6 +53,15 @@ async function startLogin(deps: Deps, c: Context): Promise<Response> {
   }
 }
 
+async function syncAfterSignIn(deps: Deps, userId: string): Promise<void> {
+  try {
+    await syncUserConnectionsAndAccounts(deps, userId);
+  } catch (error) {
+    // Handled: sign-in itself succeeded. The dashboard retries the sync and shows a banner.
+    deps.logger.logError('[Login] account sync after sign-in failed', error, { userId });
+  }
+}
+
 async function finishLogin(deps: Deps, c: Context): Promise<Response> {
   const cookieValue = getCookie(c, LOGIN_COOKIE);
   deleteCookie(c, LOGIN_COOKIE, { path: '/', secure: deps.env.NODE_ENV === 'production' });
@@ -83,8 +93,9 @@ async function finishLogin(deps: Deps, c: Context): Promise<Response> {
   }
   try {
     const previousSessionId = getCookie(c, sessionCookieName(deps.env));
-    const { sessionId } = await completeSignIn(deps, { attempt, code, previousSessionId });
+    const { userId, sessionId } = await completeSignIn(deps, { attempt, code, previousSessionId });
     setSessionCookie(c, deps.env, sessionId);
+    await syncAfterSignIn(deps, userId);
     return c.redirect(safeReturnTo(attempt.returnTo));
   } catch (error) {
     // Handled: the code exchange or id_token check failed. Nothing was saved (one transaction).

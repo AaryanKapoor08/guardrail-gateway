@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { exportJWK, generateKeyPair, type JSONWebKeySet, type JWTPayload, SignJWT } from 'jose';
 import { pkceChallenge } from '../../src/lib/crypto.js';
+import { buildDefaultBrokerage, type FakeBrokerage } from './snaptrade-data.js';
 
 // A programmable stand-in for SnapTrade, injected as `deps.fetch`. It serves the discovery
 // documents, the OAuth token and revocation endpoints (with refresh-token rotation and call
@@ -62,6 +63,8 @@ export type FakeSnapTrade = {
   // The next `times` API calls matching the pattern get this response instead.
   readonly failApi: (pattern: RegExp, response: FakeResponse, times?: number) => void;
   tokenDelayMs: number;
+  // The data the API serves. Tests change it to simulate what the user has at their brokerage.
+  brokerage: FakeBrokerage;
 };
 
 function jsonResponse(response: FakeResponse): Response {
@@ -129,7 +132,14 @@ export async function createFakeSnapTrade(options: {
       apiFailures.push({ pattern, response, remaining: times });
     },
     tokenDelayMs: 0,
+    brokerage: buildDefaultBrokerage(),
   };
+
+  fake.onApi('GET', /^\/authorizations$/, () => ({
+    status: 200,
+    body: fake.brokerage.connections,
+  }));
+  fake.onApi('GET', /^\/accounts$/, () => ({ status: 200, body: fake.brokerage.accounts }));
 
   function authorize(authorizeUrl: string, authorizeOptions: AuthorizeOptions = {}): string {
     const params = new URL(authorizeUrl).searchParams;

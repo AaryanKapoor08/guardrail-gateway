@@ -137,8 +137,9 @@ export const accounts = pgTable(
       .references(() => connections.id),
     institutionName: text('institution_name').notNull(),
     name: text('name').notNull(),
-    numberLast4: text('number_last4').notNull(),
-    rawType: text('raw_type').notNull(),
+    // Nullable: SnapTrade documents raw_type as nullable and may omit the number (D16).
+    numberLast4: text('number_last4'),
+    rawType: text('raw_type'),
     accountCategory: text('account_category'),
     isPaper: boolean('is_paper').notNull(),
     allowed: boolean('allowed').notNull().default(false),
