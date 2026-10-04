@@ -8,7 +8,7 @@
 | # | Batch | Status |
 |---|---|---|
 | 1 | P1 Scaffold + P2 Schema/foundations | **done** (82 tests, CI green) |
-| 2 | P3 Sign-in + P4 Accounts sync/dashboard | **blocked: needs Aaryan** (subagent launch denied by auto-mode safety check) |
+| 2 | P3 Sign-in + P4 Accounts sync/dashboard | running (one agent working through P3→P15) |
 | 3 | P6 Token lifecycle + P7 Policy engine/state machine | pending |
 | 4 | P8 Intents, approvals, paper executor | pending |
 | 5 | P9 OAuth authorization server for MCP | pending |
@@ -37,3 +37,4 @@
 - 2026-10-04: handoff created; starting batch 1.
 - 2026-10-04: batch 1 done (P1+P2: 82 tests pass, CI green on main, decisions D13-D14). Note for P4: accounts name/raw_type/number_last4 are NOT NULL but SnapTrade may return null. Batch 2 started.
 - 2026-10-04: launching the batch 2 subagent was DENIED by the Claude Code auto-mode classifier ("Auto-Mode Bypass"). Per the denial rules the controller stopped, did not work around it, and cancelled the hourly watchdog. Batch 2 is waiting for Aaryan to approve or relaunch.
+- 2026-10-04: Aaryan (awake) asked directly to continue; one Opus agent launched to build P3, P4, P6–P12, P14, P15 in order, updating Progress.md + this log after each phase.
