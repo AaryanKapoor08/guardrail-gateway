@@ -45,4 +45,36 @@ Rough edges found in SnapTrade's API and docs while building Guardrail Gateway, 
 
 ---
 
-*(Add findings from the build below, especially the P5 capability spike and the P12 real-webhook fixture.)*
+## Found while building (2026-10-04)
+
+These come from building against the documented shapes. They are confirmed or corrected with real Sandbox responses during deployment (see "Still to confirm").
+
+### F9 — Webhook field formats aren't specified
+- **Observed:** the `oauth_v1` webhook schema lists field names (`webhookId`, `eventTimestamp`, `userId`, …) but not their formats: whether `webhookId` is always a UUID, and whether `eventTimestamp` is ISO 8601 in UTC.
+- **Workaround:** we validate `webhookId` as a UUID and `eventTimestamp` as ISO 8601 with an offset; a payload outside that is answered 400 and SnapTrade would retry it, so we will check a real payload before relying on it.
+- **Suggestion:** document each field's type and format (and whether `connectionId` / `accountId` can be null for a given event type).
+
+### F10 — Which webhook event types are sent to OAuth apps isn't listed
+- **Observed:** the OAuth guide says "supported connection and account events" without naming them; the names we use come from the general webhook list.
+- **Workaround:** we act on `CONNECTION_*`, `NEW_ACCOUNT_AVAILABLE`, `ACCOUNT_REMOVED`, and `ACCOUNT_HOLDINGS_UPDATED`, and store-and-ignore anything else.
+- **Suggestion:** a table of the event types delivered under `oauth_v1`.
+
+### F11 — Prices arrive as a mix of decimal strings and JSON numbers
+- **Observed (from the reference shapes we built against):** position `units` and `price` are decimal strings, while quote prices (`last_trade_price`, `bid_price`, `ask_price`) and balances (`cash`, `buying_power`) are JSON numbers. JSON numbers are parsed as binary floats by most clients, which is risky for money.
+- **Workaround:** we convert every number to a decimal string immediately (through its shortest decimal form) and do all maths with a decimal library.
+- **Suggestion:** use decimal strings for every money and quantity field, consistently.
+
+### F12 — A sign-in example for MCP-style public clients would help
+- **Observed:** apps like ours act as both an OAuth client of SnapTrade and an OAuth server for AI clients (MCP). The docs cover the first role well; how webhooks, refresh rotation, and revocation interact with a second token layer is left to the developer.
+- **Suggestion:** a short "building an AI agent gateway on SnapTrade" guide (keep SnapTrade tokens server-side; issue your own tokens to the AI; revoke both on disconnect).
+
+## Still to confirm with real responses (at deploy, P5 / P12)
+
+| Question (PRODUCT_VISION §21) | What we assumed | Where |
+|---|---|---|
+| Q3 — can OAuth tokens call quotes and symbol search? | Yes; a 403 on quotes falls back to the position price | `intents/context.ts`, D19 |
+| Q6 — `raw_type` strings | Shown as-is, never branched on | D16 |
+| Q7 — does a retried webhook keep its `eventTimestamp`? | Either way is safe (stale events are re-sync hints) | D23, F3 |
+| Q8 — is the webhook signature exactly Python's `json.dumps(sort_keys=True, separators=(",",":"))` with `ensure_ascii`? | Yes; tests compare with Python-generated vectors; the real fixture test is ready | D23, F4 |
+| Q9 — TSX symbol format (`VFV.TO` vs `VFV`) | Either matches: we compare both `symbol` and `raw_symbol` | `intents/symbols.ts` |
+| Q11 — position `price` usable as a fallback | Used only when no quote is available, labelled with its source | D19 |
