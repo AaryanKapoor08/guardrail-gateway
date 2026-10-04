@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 6 — Token Lifecycle (M3)** (P5 deferred to Aaryan)
+**Current Phase: PHASE 7 — Policy Engine + State Machine (M4, pure code)** (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -16,6 +16,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (overnight autonomous build, batch 1): PHASE 1 + PHASE 2 complete and fast-forward merged to main; CI green on both branches and on main. Hono + TypeScript 7.0.2 + Biome 2.5 scaffold, Zod env validation (fails fast, names only), `/health` with DB check, graceful shutdown, GitHub Actions CI. Full V§14.1 schema (17 tables, incl. `users.is_demo` + `(is_demo, created_at)` index) migrated to Neon and the Docker test DB; append-only audit trigger (V§14.3 verbatim); AES-256-GCM field encryption, PKCE, sha256/random tokens, money (big.js), typed errors, Toronto time display, `writeAudit`. 82 tests passing in 8 files. Decisions D13 + D14 in DECISIONS.md. Next: PHASE 3 on branch `feat/p3-…`.
 - 2026-10-04 (single-agent build): PHASE 3 complete in code and merged to main (CI green). Sign in with SnapTrade (OIDC + PKCE + state + nonce, discovery with 24h cache, id_token checks with an injected key source), hashed DB sessions with fixation protection, per-session CSRF tokens plus an Origin check against APP_BASE_URL, security headers, home/dashboard/error pages, strict default policy schema. Fake SnapTrade (RS256 keys, token endpoint with rotation and counters, revocation, data API hooks) and test app helpers added. 142 tests. Human checks pending: real browser sign-in, Deny once, check ciphertext in Neon, check dev logs. Decision D15. Next: PHASE 4.
 - 2026-10-04 (single-agent build): PHASE 4 complete in code and merged to main (CI green). snaptradeFetch (10s timeout, 2 read retries on 429/5xx/network using SnapTrade reset headers then body hint then jittered backoff, status-only errors and logs), typed /authorizations and /accounts calls with tolerant Zod schemas, sync into connections/accounts (new accounts not allowed, last 4 only, missing accounts present=false), 5-minute sync cache, dashboard accounts table with allow toggles, refresh, broken-connection and reconnect banners, MCP URL box. Migration 0002 (nullable raw_type, number_last4). 167 tests. Decision D16. Next: PHASE 6 (P5 skipped: deploy + real API check is Aaryan's).
+- 2026-10-04 (single-agent build): PHASE 6 complete in code and merged to main (CI green). Single-flight refresh under a grant row lock (hash check reuses a token another request refreshed), 5-minute refresh margin, 401 → refresh once → retry once → needs_reauth, invalid_grant clears tokens, POST /disconnect revokes at SnapTrade and cuts off MCP grants. 178 tests. Decision D17. Next: PHASE 7.
 
 ---
 
@@ -81,13 +82,13 @@ Last Updated: 2026-10-04
 - [ ] Commits: `chore(deploy): configure render start with migrations` · `chore(snaptrade): add capability spike script` · `docs: record snaptrade capability spike results`
 - Notes: Skipped in the 2026-10-04 autonomous build by agreement with Aaryan (needs Render, UptimeRobot, and real SnapTrade calls). P8+ were built on the documented response shapes; see D16 and later decisions marked "verify in P5".
 
-### PHASE 6 — Token Lifecycle (M3) [not started]
+### PHASE 6 — Token Lifecycle (M3) [in progress — human checks pending]
 
-- [ ] Concurrency test proves exactly one refresh call
+- [x] Concurrency test proves exactly one refresh call
 - [ ] Manual (local): set `access_expires_at` to the past in the DB, reload the dashboard → data loads (refresh happened); grant updated
 - [ ] Manual: Disconnect → reconnect required; per V§19.2 #10, the old refresh token no longer works (verify with a one-off curl to the token endpoint using a copied old token *before* disconnecting, then after; **don't paste tokens into chat or logs**)
-- [ ] Commits: `feat(tokens): add single-flight refresh with row lock` · `feat(snaptrade): refresh once and retry once on 401` · `feat(auth): disconnect revokes snaptrade token` · `test(tokens): prove one refresh under concurrency`
-- Notes:
+- [x] Commits: `feat(tokens): add single-flight refresh with row lock` · `feat(snaptrade): refresh once and retry once on 401` · `feat(auth): disconnect revokes snaptrade token` · `test(tokens): prove one refresh under concurrency`
+- Notes: Built 2026-10-04 and merged to main (CI run 37181569904 green). 178 tests. 10 concurrent calls with an expired token hit the fake token endpoint exactly once and the DB holds the rotated refresh token; 401 → refresh → retry; second 401 and invalid_grant both clear the grant and set needs_reauth; network error retried once with the same refresh token; 5xx keeps the grant; disconnect revokes with token_type_hint=refresh_token, deletes the grant, revokes MCP grants/tokens, ends the session. Manual DB-expiry and real revocation checks wait for Aaryan. See D17.
 
 ### PHASE 7 — Policy Engine + State Machine (M4, pure code) [not started]
 
