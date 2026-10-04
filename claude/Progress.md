@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 14 — The 2-Minute Test: Instant Demo (M10a)** (P13 skipped: trade scope not enabled) (P5 deferred to Aaryan)
+**Current Phase: PHASE 15 — Submission Polish (M10)** (P5 and P13 skipped) (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -23,6 +23,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 10 complete in code and merged to main (CI green). MCP endpoint on SDK v2 (createMcpHandler, JSON responses, stateless, both protocol eras) behind requireBearerAuth with our verifier, Host/Origin checks, the 8 tools with strict inputs, output schemas, annotations, safe error handling, per-user limits (60 calls, 10 proposals a minute). 647 tests. Decision D21. Human checks pending: the Q5 gate with real Claude web/Code, Inspector, revoke-from-dashboard (all need the P5 deploy). Next: PHASE 11.
 - 2026-10-04 (single-agent build): PHASE 11 complete in code and merged to main (CI green). Policy editor (validated by the engine's own schema, version bump, before/after audit), kill switch and mode controls with header state, audit log view, account deletion (best-effort revoke, one transaction under the audit trigger), public privacy page. Fixed a sync isolation bug found by the deletion test. 686 tests. Decision D22. Human check pending: browser walk-through of every setting. Next: PHASE 12.
 - 2026-10-04 (single-agent build): PHASE 12 complete in code and merged to main (CI green). Python-compatible canonical JSON, signature check, idempotent storage with stale flag, background processing as re-sync hints (no locks during network calls), sweeper retries and 30-day purge, new-account notice. 710 tests (+1 skipped real-fixture test). Decision D23. Human checks pending: webhook URL in the SnapTrade dashboard, capture and verify one real webhook. Next: PHASE 14 (P13 skipped).
+- 2026-10-04 (single-agent build): PHASE 14 complete in code and merged to main (CI green). Instant demo: built-in demo brokerage behind snaptradeFetch (same Zod parsing, no network), POST /demo/start with per-IP and global limits, sign-in choice page for Claude's connector, guided /try page, "Try it without an AI" form, demo banner, 24h cleanup through the account-deletion path. 726 tests. Decision D24. Human checks pending: stopwatch test and Claude on a demo account (after deploy). Next: PHASE 15 (docs).
 
 ---
 
@@ -157,13 +158,13 @@ Last Updated: 2026-10-04
 - [ ] Commits: `feat(live): place orders via snaptrade with client order id` · `feat(live): track submitted orders and reconcile unknown` · `feat(approvals): show brokerage preview in live mode` · `test(live): cover outcomes gates and no-retry rule`
 - Notes:
 
-### PHASE 14 — The 2-Minute Test: Instant Demo (M10a) [not started]
+### PHASE 14 — The 2-Minute Test: Instant Demo (M10a) [in progress — human checks pending]
 
-- [ ] All demo tests pass (including "no SnapTrade calls for demo users")
+- [x] All demo tests pass (including "no SnapTrade calls for demo users")
 - [ ] **Stopwatch test on the deployed URL** by someone who has never seen the app: landing → demo → rejected → approved → filled → audit log in **< 2 minutes**, no typing
 - [ ] Claude connects to a demo account (sign-in page → "Try the demo") and proposes an order
-- [ ] Commits: `feat(demo): add built-in demo brokerage data` · `feat(demo): add instant demo accounts with 24h cleanup` · `feat(web): add guided try page and manual proposal form` · `test(demo): cover demo isolation guided steps and cleanup`
-- Notes:
+- [x] Commits: `feat(demo): add built-in demo brokerage data` · `feat(demo): add instant demo accounts with 24h cleanup` · `feat(web): add guided try page and manual proposal form` · `test(demo): cover demo isolation guided steps and cleanup`
+- Notes: Built 2026-10-04 and merged to main (CI run 37194407932 green). 726 tests (+1 skipped). 16 demo tests: isolated demo user with the Demo TFSA allowed and Demo Individual not; the fake SnapTrade fetch sees zero requests through a full demo; too big → both limit reasons ($1,524.00 CAD); 0.001 BTC → asset type only; 0.5 VFV.TO → pending → approve → FILLED with the paper position and checklist; live refused; 6th start from one IP refused; cap of 300; Origin check; 24h-old demo user fully deleted including MCP grants/tokens; demo data parses with the real schemas; /trade/* never routed; connector sign-in page → demo → consent; manual form recorded as `user`/`manual test` with CSRF. The guided page landed in the demo-accounts commit (one routes file). Extra commit: `docs: record phase 14 demo decisions`. See D24. Stopwatch and Claude-on-demo checks need the deploy (Aaryan).
 
 ### PHASE 15 — Submission Polish (M10) [not started]
 
