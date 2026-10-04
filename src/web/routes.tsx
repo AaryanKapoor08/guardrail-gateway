@@ -2,7 +2,8 @@ import type { Context, Hono } from 'hono';
 import { z } from 'zod';
 import { listUserAccounts, setAccountAllowed } from '../accounts/service.js';
 import { verifyCsrf } from '../auth/csrf.js';
-import { loadSession, requireSession, type SignedInEnv } from '../auth/sessions.js';
+import { disconnectUser } from '../auth/disconnect.js';
+import { destroySession, loadSession, requireSession, type SignedInEnv } from '../auth/sessions.js';
 import type { Deps } from '../deps.js';
 import { NeedsReauthError, NotFoundError } from '../lib/errors.js';
 import { syncIfStale, syncUserConnectionsAndAccounts } from '../snaptrade/sync.js';
@@ -97,6 +98,15 @@ async function refreshAccounts(deps: Deps, c: Context<SignedInEnv>): Promise<Res
   }
 }
 
+async function disconnect(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
+  const { revokedAtSnapTrade } = await disconnectUser(deps, c.var.user.id);
+  await destroySession(deps, c);
+  const message = revokedAtSnapTrade
+    ? 'Guardrail Gateway no longer has access to your SnapTrade accounts, and every connected AI app was cut off. Your history is kept; sign in again any time.'
+    : 'We deleted our copy of your SnapTrade access and cut off every connected AI app, but SnapTrade did not confirm the revocation. Also remove Guardrail Gateway in your SnapTrade dashboard.';
+  return renderPage(c, <ErrorPage title="Disconnected" message={message} />);
+}
+
 export function registerWebRoutes(app: Hono, deps: Deps): void {
   app.get('/', async (c) => {
     const signedIn = await loadSession(deps, c);
@@ -105,6 +115,7 @@ export function registerWebRoutes(app: Hono, deps: Deps): void {
 
   app.get('/dashboard', requireSession(deps), (c) => showDashboard(deps, c));
   app.post('/accounts/refresh', requireSession(deps), verifyCsrf, (c) => refreshAccounts(deps, c));
+  app.post('/disconnect', requireSession(deps), verifyCsrf, (c) => disconnect(deps, c));
   app.post('/accounts/:ref/allow', requireSession(deps), verifyCsrf, (c) =>
     changeAccountAllowed(deps, c),
   );

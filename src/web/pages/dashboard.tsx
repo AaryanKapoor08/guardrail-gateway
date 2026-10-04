@@ -155,6 +155,19 @@ export function DashboardPage(props: DashboardProps) {
         <p>No orders are waiting for your approval.</p>
       </section>
       <McpBox mcpUrl={props.mcpUrl} />
+      <section class="box">
+        <h2>Disconnect SnapTrade</h2>
+        <p>
+          Revokes our access at SnapTrade, cuts off every connected AI app, and signs you out. Your
+          history stays; you can sign in again later.
+        </p>
+        <form method="post" action="/disconnect">
+          <CsrfField token={csrfToken} />
+          <button type="submit" class="danger">
+            Disconnect SnapTrade
+          </button>
+        </form>
+      </section>
       <p class="notice">Not financial advice. Guardrail Gateway never recommends trades.</p>
     </Layout>
   );
