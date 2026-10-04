@@ -6,6 +6,7 @@ import { registerApprovalRoutes } from './approvals/routes.js';
 import { originCheck } from './auth/csrf.js';
 import { registerLoginRoutes } from './auth/login-routes.js';
 import type { Env } from './config/env.js';
+import { registerDemoRoutes } from './demo/routes.js';
 import type { Deps } from './deps.js';
 import { registerMcpRoutes } from './mcp/handler.js';
 import { registerAuthorizeRoutes } from './oauth-server/authorize.js';
@@ -67,6 +68,7 @@ export function createApp(deps: Deps): Hono {
   registerLoginRoutes(app, deps);
   registerWebRoutes(app, deps);
   registerSettingsRoutes(app, deps);
+  registerDemoRoutes(app, deps);
   registerApprovalRoutes(app, deps);
 
   return app;

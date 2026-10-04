@@ -129,7 +129,7 @@ function Decision(props: { intent: IntentView; csrfToken: string }) {
   );
 }
 
-function Outcome(props: { intent: IntentView }) {
+function Outcome(props: { intent: IntentView; isDemo: boolean }) {
   const { intent } = props;
   const fill =
     intent.execution !== null && intent.execution.avgFillPrice !== null
@@ -144,7 +144,11 @@ function Outcome(props: { intent: IntentView }) {
         {extra}
       </p>
       <p>
-        <a href="/dashboard">Back to the dashboard</a>
+        {props.isDemo ? (
+          <a href="/try">Back to the guided demo</a>
+        ) : (
+          <a href="/dashboard">Back to the dashboard</a>
+        )}
       </p>
     </section>
   );
@@ -174,7 +178,7 @@ export function ApprovalPage(props: ApprovalPageProps) {
       {isPending ? (
         <Decision intent={intent} csrfToken={signedIn.session.csrfToken} />
       ) : (
-        <Outcome intent={intent} />
+        <Outcome intent={intent} isDemo={signedIn.user.isDemo} />
       )}
       <p class="notice">Not financial advice. Guardrail Gateway never recommends trades.</p>
     </Layout>

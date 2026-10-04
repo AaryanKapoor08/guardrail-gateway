@@ -109,8 +109,12 @@ describe('metadata', () => {
 describe('happy path', () => {
   it('signs a signed-out user in, asks for consent, and issues working tokens', async () => {
     const authorize = await getPage(testApp, authorizePath());
-    const loginPath = `${locationOf(authorize).pathname}${locationOf(authorize).search}`;
-    expect(loginPath).toMatch(/^\/login\?mcp_request=[0-9a-f-]{36}$/);
+    const signInPath = `${locationOf(authorize).pathname}${locationOf(authorize).search}`;
+    expect(signInPath).toMatch(/^\/signin\?mcp_request=[0-9a-f-]{36}$/);
+    const signInPage = await (await getPage(testApp, signInPath)).text();
+    expect(signInPage).toContain('Try the demo (no sign-up, ~1 minute)');
+    const loginPath = signInPath.replace('/signin', '/login');
+    expect(signInPage).toContain(`href="${loginPath}"`);
 
     const { authorizeUrl, loginCookie } = await startLogin(testApp, loginPath);
     const snaptradeCode = testApp.fake.authorize(authorizeUrl);

@@ -82,11 +82,11 @@ async function startAuthorization(deps: Deps, c: Context): Promise<Response> {
   if (saved === undefined) {
     throw new Error('[OAuth] authorization request insert returned no row');
   }
-  // Signed out: sign in with SnapTrade first; the login callback comes back to the consent page.
+  // Signed out: sign in first (SnapTrade or the instant demo); both come back to the consent page.
   const signedIn = await loadSession(deps, c);
   return c.redirect(
     signedIn === null
-      ? `/login?mcp_request=${saved.id}`
+      ? `/signin?mcp_request=${saved.id}`
       : `/oauth/authorize/resume?request=${saved.id}`,
   );
 }

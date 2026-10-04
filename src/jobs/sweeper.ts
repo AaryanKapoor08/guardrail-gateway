@@ -6,6 +6,7 @@ import {
   sessions,
   webhookEvents,
 } from '../db/schema.js';
+import { deleteExpiredDemoUsers } from '../demo/demo-users.js';
 import type { Deps } from '../deps.js';
 import { expireDueForUser, findUsersWithDueIntents } from '../intents/expiry.js';
 import { processPending } from '../webhooks/processor.js';
@@ -18,6 +19,7 @@ export const SWEEP_INTERVAL_MS = 60_000;
 export type SweepSummary = {
   readonly expiredIntents: number;
   readonly processedWebhooks: number;
+  readonly deletedDemoUsers: number;
   readonly purgedRows: number;
 };
 
@@ -64,8 +66,9 @@ export async function runSweepOnce(deps: Deps): Promise<SweepSummary> {
   const expiredIntents = await expireIntents(deps);
   // Retries webhook events that weren't processed right away (e.g. after a restart).
   const processedWebhooks = await processPending(deps);
+  const deletedDemoUsers = await deleteExpiredDemoUsers(deps);
   const purgedRows = await purgeExpiredRows(deps);
-  return { expiredIntents, processedWebhooks, purgedRows };
+  return { expiredIntents, processedWebhooks, deletedDemoUsers, purgedRows };
 }
 
 export type Sweeper = { readonly stop: () => Promise<void> };

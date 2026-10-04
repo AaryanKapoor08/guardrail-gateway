@@ -287,7 +287,12 @@ describe('expiry', () => {
 
     const summary = await runSweepOnce(testApp.deps);
 
-    expect(summary).toEqual({ expiredIntents: 0, processedWebhooks: 0, purgedRows: 0 });
+    expect(summary).toEqual({
+      expiredIntents: 0,
+      processedWebhooks: 0,
+      deletedDemoUsers: 0,
+      purgedRows: 0,
+    });
   });
 });
 

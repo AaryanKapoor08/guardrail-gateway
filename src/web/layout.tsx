@@ -50,6 +50,12 @@ export function Layout(props: LayoutProps) {
           </a>
           {props.signedIn === undefined ? null : <SignedInNav signedIn={props.signedIn} />}
         </header>
+        {props.signedIn?.user.isDemo === true ? (
+          <div class="demo-banner">
+            DEMO DATA, not a real brokerage. This demo account and everything in it is deleted 24
+            hours after it was created. <a href="/try">Guided demo</a>
+          </div>
+        ) : null}
         {props.signedIn?.user.killSwitch === true ? (
           <div class="kill-switch-on">
             Kill switch is ON: every order the AI proposes is refused.{' '}

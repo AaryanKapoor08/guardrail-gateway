@@ -193,6 +193,19 @@ code {
   color: #fff;
 }
 
+.demo-banner {
+  padding: 0.6rem 1.5rem;
+  background: #fff4e5;
+  border-bottom: 1px solid #f0c27b;
+  font-weight: 700;
+  text-align: center;
+}
+
+.checklist {
+  list-style: none;
+  padding-left: 0;
+}
+
 .errors {
   color: var(--danger);
 }

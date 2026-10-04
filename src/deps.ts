@@ -31,6 +31,8 @@ export type Limiters = {
   // Per user, on MCP tool calls: 60 a minute overall, 10 proposals a minute (V§11.1).
   readonly toolCallsPerUser: RateLimiter;
   readonly proposalsPerUser: RateLimiter;
+  // Per IP address, on POST /demo/start: 5 an hour (V§13 Demo accounts).
+  readonly demoStartsPerIp: RateLimiter;
 };
 
 // Returns the key set used to check SnapTrade's id_token signatures. Production downloads
@@ -71,6 +73,7 @@ export function createLimiters(now: () => Date): Limiters {
     signInPerIp: createRateLimiter({ limit: 30, windowMs: ONE_MINUTE_MS, now }),
     toolCallsPerUser: createRateLimiter({ limit: 60, windowMs: ONE_MINUTE_MS, now }),
     proposalsPerUser: createRateLimiter({ limit: 10, windowMs: ONE_MINUTE_MS, now }),
+    demoStartsPerIp: createRateLimiter({ limit: 5, windowMs: 60 * ONE_MINUTE_MS, now }),
   };
 }
 

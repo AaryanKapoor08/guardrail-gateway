@@ -1,4 +1,5 @@
 import type { SignedIn } from '../../auth/sessions.js';
+import { SignInChoices } from '../../demo/pages.js';
 import { Layout } from '../layout.js';
 
 export function HomePage(props: { signedIn: SignedIn | undefined }) {
@@ -17,11 +18,7 @@ export function HomePage(props: { signedIn: SignedIn | undefined }) {
         <li>Everything is recorded in an audit log.</li>
       </ul>
       {props.signedIn === undefined ? (
-        <p>
-          <a href="/login" class="button">
-            Sign in with SnapTrade
-          </a>
-        </p>
+        <SignInChoices />
       ) : (
         <p>
           <a href="/dashboard" class="button">
