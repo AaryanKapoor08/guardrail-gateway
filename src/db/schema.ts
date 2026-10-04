@@ -224,9 +224,16 @@ export const orderIntents = pgTable(
       .references(() => accounts.id),
     // Which AI proposed it. Kept as history if the grant row ever goes away.
     grantId: uuid('grant_id').references(() => mcpGrants.id, { onDelete: 'set null' }),
+    // Who proposed it, for the approval page: an AI client host ('claude.ai') or, for the
+    // user's own test proposals, 'manual test' / 'guided demo'. Added in migration 0003 (D19).
+    proposedBy: text('proposed_by').notNull().default('unknown'),
     idempotencyKey: uuid('idempotency_key'),
     fingerprint: text('fingerprint').notNull(),
     symbol: text('symbol').notNull(),
+    // The broker's short form (e.g. 'VFV' for 'VFV.TO'), used to match holdings. Added in 0003.
+    rawSymbol: text('raw_symbol'),
+    // The security's full name from the broker (shown on the approval page). Added in 0003.
+    securityName: text('security_name'),
     universalSymbolId: uuid('universal_symbol_id').notNull(),
     securityType: text('security_type').notNull(),
     currency: text('currency').notNull(),

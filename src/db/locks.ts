@@ -1,6 +1,8 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import type { IntentState } from '../intents/state-machine.js';
+import { NotFoundError } from '../lib/errors.js';
 import type { Transaction } from './client.js';
-import { users } from './schema.js';
+import { orderIntents, users } from './schema.js';
 
 export type LockedUser = {
   readonly id: string;
@@ -28,4 +30,27 @@ export async function lockUserRow(tx: Transaction, userId: string): Promise<Lock
     .where(eq(users.id, userId))
     .for('update');
   return user ?? null;
+}
+
+// Same as lockUserRow, for callers where a missing user is a bug or a "not found".
+export async function lockExistingUser(tx: Transaction, userId: string): Promise<LockedUser> {
+  const user = await lockUserRow(tx, userId);
+  if (user === null) {
+    throw new NotFoundError();
+  }
+  return user;
+}
+
+// The intent's row lock (second in the lock order). Null if it isn't this user's intent.
+export async function lockIntentRow(
+  tx: Transaction,
+  userId: string,
+  intentId: string,
+): Promise<{ status: IntentState } | null> {
+  const [row] = await tx
+    .select({ status: orderIntents.status })
+    .from(orderIntents)
+    .where(and(eq(orderIntents.id, intentId), eq(orderIntents.userId, userId)))
+    .for('update');
+  return row ?? null;
 }

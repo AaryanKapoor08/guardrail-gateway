@@ -5,10 +5,10 @@ export type Actor = (typeof ACTORS)[number];
 
 export type AuditEvent = {
   readonly userId: string;
-  readonly intentId?: string;
+  readonly intentId?: string | undefined;
   readonly actor: Actor;
   // Who exactly, e.g. 'claude.ai' for an AI client.
-  readonly actorDetail?: string;
+  readonly actorDetail?: string | undefined;
   readonly eventType: string;
   readonly details: Readonly<Record<string, unknown>>;
   // From the injected clock (`deps.now()`), so tests control audit times.
@@ -63,4 +63,28 @@ export async function writeAudit(tx: DatabaseExecutor, event: AuditEvent): Promi
     details: event.details,
     createdAt: event.createdAt,
   });
+}
+
+// Several audit rows in one statement (e.g. the kill switch cancelling many intents at once).
+export async function writeAudits(
+  tx: DatabaseExecutor,
+  events: readonly AuditEvent[],
+): Promise<void> {
+  if (events.length === 0) {
+    return;
+  }
+  for (const event of events) {
+    assertNoSecrets(event.details);
+  }
+  await tx.insert(auditEvents).values(
+    events.map((event) => ({
+      userId: event.userId,
+      intentId: event.intentId ?? null,
+      actor: event.actor,
+      actorDetail: event.actorDetail ?? null,
+      eventType: event.eventType,
+      details: event.details,
+      createdAt: event.createdAt,
+    })),
+  );
 }
