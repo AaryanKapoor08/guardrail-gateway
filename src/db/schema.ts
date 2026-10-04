@@ -15,6 +15,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { INTENT_STATES } from '../intents/state-machine.js';
 import { MODES, ORDER_TYPES, SIDES } from '../policy/types.js';
 
 // The full data model from PRODUCT_VISION §14.1. Columns marked "null" there are nullable;
@@ -24,21 +25,6 @@ export const CONNECTION_TYPES = ['read', 'trade'] as const;
 export const MCP_TOKEN_KINDS = ['access', 'refresh'] as const;
 export const EXECUTORS = ['paper', 'snaptrade'] as const;
 export const ACTORS = ['ai', 'user', 'system'] as const;
-export const INTENT_STATUSES = [
-  'PROPOSED',
-  'POLICY_REJECTED',
-  'PENDING_APPROVAL',
-  'DENIED',
-  'EXPIRED',
-  'CANCELLED',
-  'APPROVED',
-  'EXECUTING',
-  'SUBMITTED',
-  'UNKNOWN',
-  'FILLED',
-  'CLOSED',
-  'FAILED',
-] as const;
 
 function timestamptz(name: string) {
   return timestamp(name, { withTimezone: true });
@@ -255,7 +241,7 @@ export const orderIntents = pgTable(
     estValue: numeric('est_value'),
     priceSource: text('price_source').notNull(),
     priceAsOf: timestamptz('price_as_of'),
-    status: text('status', { enum: INTENT_STATUSES }).notNull(),
+    status: text('status', { enum: INTENT_STATES }).notNull(),
     checkResults: jsonb('check_results').notNull(),
     policyVersion: integer('policy_version').notNull(),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
@@ -267,7 +253,7 @@ export const orderIntents = pgTable(
     check('order_intents_side_check', isOneOf(table.side, SIDES)),
     check('order_intents_order_type_check', isOneOf(table.orderType, ORDER_TYPES)),
     check('order_intents_mode_check', isOneOf(table.mode, MODES)),
-    check('order_intents_status_check', isOneOf(table.status, INTENT_STATUSES)),
+    check('order_intents_status_check', isOneOf(table.status, INTENT_STATES)),
     unique('order_intents_user_id_idempotency_key_unique').on(table.userId, table.idempotencyKey),
     index('order_intents_user_id_created_at_idx').on(table.userId, table.createdAt),
     // The sweeper finds PENDING_APPROVAL intents whose window has passed.
