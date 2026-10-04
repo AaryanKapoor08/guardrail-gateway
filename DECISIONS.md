@@ -55,3 +55,14 @@ Every non-obvious choice: **what** we chose, **why**, and the **alternatives** c
 ---
 
 *(Add decisions made during the build below, e.g. capability spike results for Q3/Q6/Q9/Q11.)*
+
+### D13 — Phase 1 tooling details (2026-10-04)
+- **What:**
+  - `.env` is read with Node's built-in `process.loadEnvFile()` (in `loadDotEnvFileIfPresent()`), called by `server.ts` and `db/migrate.ts` only. A missing file is normal (Render injects real env vars). Real environment variables win over the file.
+  - Biome 2.5 deprecated `"recommended": true`; the config uses `"preset": "recommended"` (produced by `biome migrate`). The floating-promise rules (`noFloatingPromises`, `noMisusedPromises`) live in Biome's **nursery** group in 2.5 and are switched on explicitly as errors.
+  - TypeScript 7.0.2 accepted every option in BuildFlow P1 task 3 unchanged. `tsconfig.json` also sets `noEmit: true` (so `tsc --noEmit` and editors never write files); `tsconfig.build.json` turns emit back on.
+  - The Docker test database container is named `gg-db-test`, so it can be removed by exact name.
+  - Tests default `TEST_DATABASE_URL` to the Docker URL from `docker-compose.yml` (not a secret) when it isn't set, so `npm test` doesn't need `.env`.
+  - CI uses `actions/checkout@v7` and `actions/setup-node@v7` (latest releases on 2026-10-04), and a fake key of 32 zero bytes.
+- **Why:** no extra dependency (`dotenv`) for something Node 24 does natively; keep the linter config on the non-deprecated syntax.
+- **Alternatives:** `dotenv` package; `node --env-file-if-exists` flags in every script (harder to see, and `tsx watch` / `vitest` handle flags differently).
