@@ -140,7 +140,7 @@ docker-compose.yml           postgres:17 for tests (port 5433)
    - **API Keys:** copy the **consumer key** (used only to verify webhook signatures).
 4. **SnapTrade Personal** workspace (the *test user*): connect the **SnapTrade Sandbox** brokerage. Use a different login from the Commercial account if the dashboard requires it.
 5. **Trade scope:** confirm the support email asking to enable `trade` for the Test app has been sent (V§21 Q1).
-6. **Neon** (https://neon.tech): create project `guardrail-gateway`, region **AWS us-east-1 (N. Virginia)**. Copy the **pooled** connection string (host contains `-pooler`, ends with `sslmode=require`).
+6. **Neon** (https://neon.tech, sign in with GitHub): create project `guardrail-gateway` and pick region **US East (N. Virginia)** from the dropdown. **No AWS account or setup needed.** Neon hosts on AWS internally, and the region label is just where the database lives. It should match the Render region (Virginia) for low latency. Copy the **pooled** connection string (Connection pooling toggle on; host contains `-pooler`, ends with `sslmode=require`) into `.env` as `DATABASE_URL`.
 7. **Render** account (https://render.com), connected to GitHub. Used in P5.
 8. *Optional, recommended:* a domain (≈ $10–15/yr) and a **Resend** account with that domain verified (needed to email anyone but yourself).
 9. Fill `.env` (template already created; `TOKEN_ENCRYPTION_KEY` is pre-generated).
