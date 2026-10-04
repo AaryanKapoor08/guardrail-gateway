@@ -2,9 +2,9 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 0 — Accounts, Keys, Machine (human tasks)**
+**Current Phase: PHASE 3 — Sign in with SnapTrade (M1, part 1)**
 
-Last Updated: 2026-10-03
+Last Updated: 2026-10-04
 
 ---
 
@@ -13,6 +13,7 @@ Last Updated: 2026-10-03
 - 2026-10-03: Planning complete. PRODUCT_VISION.md (final vision, cross-checked twice against live SnapTrade, Claude-connector, and MCP docs) and claude/BuildFlow.md written. Repo created and pushed. .env created locally (git-ignored) with TOKEN_ENCRYPTION_KEY pre-generated. Waiting on Phase 0 human tasks.
 - 2026-10-03: Env verified live. Neon OK (Postgres 17.11, pooled, us-east-1, transactions OK through pooler, sslmode switched to verify-full). SnapTrade discovery + JWKS OK. Client id+secret ACCEPTED by the token endpoint (wrong-secret control rejected with invalid_client). Consumer key set (50 chars), but it can only be verified with a real webhook (P12). Redirect URI registration is verified by the first real sign-in (P3). Still TODO at that point: Node 24, Docker.
 - 2026-10-03: Node 24.19.0 installed (winget OpenJS.NodeJS.LTS, replaced 22.16). Docker Desktop started (engine 29.5.3). Full re-test under Node 24: Neon + Docker Postgres 17 (transactions + row locks), SnapTrade discovery, client creds, AES-256-GCM key, base-URL/redirect origin: all OK. Coding standards added to CLAUDE.md; stack bumped to TypeScript 7 + Biome. Instant-demo phase (P14) added so anyone can test in < 2 minutes; free hosting (Render free + 5-min ping). SnapTrade Personal has SnapTrade Sandbox (Active, read-only) + a real Wealthsimple connection (read-only; keep it NOT allowed in our app during development; useful for Q6 raw_type in the P5 spike). Remaining Phase 0: SnapTrade Personal test workspace with Sandbox, Render account.
+- 2026-10-04 (overnight autonomous build, batch 1): PHASE 1 + PHASE 2 complete and fast-forward merged to main; CI green on both branches and on main. Hono + TypeScript 7.0.2 + Biome 2.5 scaffold, Zod env validation (fails fast, names only), `/health` with DB check, graceful shutdown, GitHub Actions CI. Full V§14.1 schema (17 tables, incl. `users.is_demo` + `(is_demo, created_at)` index) migrated to Neon and the Docker test DB; append-only audit trigger (V§14.3 verbatim); AES-256-GCM field encryption, PKCE, sha256/random tokens, money (big.js), typed errors, Toronto time display, `writeAudit`. 82 tests passing in 8 files. Decisions D13 + D14 in DECISIONS.md. Next: PHASE 3 on branch `feat/p3-…`.
 
 ---
 
@@ -29,24 +30,24 @@ Last Updated: 2026-10-03
 - [ ] Render account (free) exists and is linked to GitHub; UptimeRobot account (free) created
 - Notes:
 
-### PHASE 1 — Project Scaffold (M0, part 1) [not started]
+### PHASE 1 — Project Scaffold (M0, part 1) [complete]
 
-- [ ] `npm run check` → 0 lint errors, 0 type errors
-- [ ] `npm run db:test:up && npm test` → env + health tests pass
-- [ ] `npm run dev` with real `.env` → `curl localhost:3000/health` returns `{"status":"ok"}` (Neon reachable)
-- [ ] Starting with `TOKEN_ENCRYPTION_KEY` removed prints a readable error and exits 1
-- [ ] CI workflow green on GitHub
-- [ ] Commits: `chore(config): scaffold node 24 hono server with env validation` · `test(config): cover env validation and health check` · `ci: run typecheck and tests on push`
-- Notes:
+- [x] `npm run check` → 0 lint errors, 0 type errors
+- [x] `npm run db:test:up && npm test` → env + health tests pass
+- [x] `npm run dev` with real `.env` → `curl localhost:3000/health` returns `{"status":"ok"}` (Neon reachable)
+- [x] Starting with `TOKEN_ENCRYPTION_KEY` removed prints a readable error and exits 1
+- [x] CI workflow green on GitHub
+- [x] Commits: `chore(config): scaffold node 24 hono server with env validation` · `test(config): cover env validation and health check` · `ci: run typecheck and tests on push`
+- Notes: Verified 2026-10-04. TS 7.0.2 accepted every tsconfig option unchanged (also set `noEmit: true` in the base config; the build config turns emit on). Biome 2.5: `"preset": "recommended"` (the `recommended: true` key is deprecated) and `noFloatingPromises` / `noMisusedPromises` live in the nursery group, enabled as errors (a probe file confirmed the rule fires). `.env` is loaded with Node's built-in `process.loadEnvFile()` (no dotenv); real env vars win over the file. Server started with the real `.env` (`tsx src/server.ts`, the same entry as `npm run dev`) answered `{"status":"ok"}` from Neon. Blank or removed `TOKEN_ENCRYPTION_KEY` prints `[Config] Invalid environment variables: - TOKEN_ENCRYPTION_KEY: is missing` and exits 1. Graceful SIGTERM/SIGINT shutdown is implemented but not exercised on Windows (no POSIX signals); Render deploys will exercise it. Test container is named `gg-db-test`. CI runs 37179551486 (branch) and 37179607651 (main) green. See D13.
 
-### PHASE 2 — Database Schema + Foundations (M0, part 2) [not started]
+### PHASE 2 — Database Schema + Foundations (M0, part 2) [complete]
 
-- [ ] `npm run db:migrate` applies cleanly to Neon, and `MIGRATE_TARGET=test npm run db:migrate` to the test DB
-- [ ] All V§14.1 tables exist (`\dt` or a Drizzle introspection check)
-- [ ] Audit guard tests pass (update/delete blocked, deletion path allowed)
-- [ ] Crypto + money unit tests pass, including the RFC 7636 PKCE vector
-- [ ] Commits: `feat(db): add full schema and initial migration` · `feat(audit): enforce append-only audit log with trigger` · `feat(crypto): add aes-gcm field encryption and token helpers` · `feat(db): add decimal money helpers`
-- Notes:
+- [x] `npm run db:migrate` applies cleanly to Neon, and `MIGRATE_TARGET=test npm run db:migrate` to the test DB
+- [x] All V§14.1 tables exist (`\dt` or a Drizzle introspection check)
+- [x] Audit guard tests pass (update/delete blocked, deletion path allowed)
+- [x] Crypto + money unit tests pass, including the RFC 7636 PKCE vector
+- [x] Commits: `feat(db): add full schema and initial migration` · `feat(audit): enforce append-only audit log with trigger` · `feat(crypto): add aes-gcm field encryption and token helpers` · `feat(db): add decimal money helpers`
+- Notes: Verified 2026-10-04. Both migrations (`0000_initial_schema`, `0001_audit_guard`) applied to Neon **through the pooler** (no direct URL needed) and to the test DB; a second run applies 0. `\dt` on the test DB, a Neon table listing, and an `information_schema` test all show the 17 tables. Includes `users.is_demo` + index `(is_demo, created_at)` for P14. Extra tests beyond the list: deleting a user empties every table (FK design check), check constraints reject unknown values, the audit-deletion setting is transaction-local. `writeAudit` takes a required `createdAt` (injected clock); the app will set the deletion flag with `set_config('app.deleting_user', $id, true)` (same as `SET LOCAL`, but parameterised). Extra commits: `feat(config): add typed app errors and toronto time display`, `docs: record phase 1 and 2 build decisions`. CI run 37179923323 green. See D14.
 
 ### PHASE 3 — Sign in with SnapTrade (M1, part 1) [not started]
 
