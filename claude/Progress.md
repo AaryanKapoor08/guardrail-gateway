@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 12 — Webhooks (M8)** (P5 deferred to Aaryan)
+**Current Phase: PHASE 14 — The 2-Minute Test: Instant Demo (M10a)** (P13 skipped: trade scope not enabled) (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -22,6 +22,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 9 complete in code and merged to main (CI green). Hand-written OAuth authorization server for MCP clients: PRM + AS metadata, CIMD with host allowlist and bounded fetch, loopback redirect matching, consent page (requester host, redirect host, loopback warning), single-use 60 s codes, PKCE S256, rotating opaque tokens with reuse detection, RFC 7009 revocation, verifyAccessToken for the MCP gate, per-IP rate limit, Connected AI apps page. 624 tests. Decision D20. Human check pending: curl the deployed AS metadata (after P5). Next: PHASE 10.
 - 2026-10-04 (single-agent build): PHASE 10 complete in code and merged to main (CI green). MCP endpoint on SDK v2 (createMcpHandler, JSON responses, stateless, both protocol eras) behind requireBearerAuth with our verifier, Host/Origin checks, the 8 tools with strict inputs, output schemas, annotations, safe error handling, per-user limits (60 calls, 10 proposals a minute). 647 tests. Decision D21. Human checks pending: the Q5 gate with real Claude web/Code, Inspector, revoke-from-dashboard (all need the P5 deploy). Next: PHASE 11.
 - 2026-10-04 (single-agent build): PHASE 11 complete in code and merged to main (CI green). Policy editor (validated by the engine's own schema, version bump, before/after audit), kill switch and mode controls with header state, audit log view, account deletion (best-effort revoke, one transaction under the audit trigger), public privacy page. Fixed a sync isolation bug found by the deletion test. 686 tests. Decision D22. Human check pending: browser walk-through of every setting. Next: PHASE 12.
+- 2026-10-04 (single-agent build): PHASE 12 complete in code and merged to main (CI green). Python-compatible canonical JSON, signature check, idempotent storage with stale flag, background processing as re-sync hints (no locks during network calls), sweeper retries and 30-day purge, new-account notice. 710 tests (+1 skipped real-fixture test). Decision D23. Human checks pending: webhook URL in the SnapTrade dashboard, capture and verify one real webhook. Next: PHASE 14 (P13 skipped).
 
 ---
 
@@ -140,13 +141,13 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(web): add policy editor with audit trail` · `feat(web): add kill switch and mode controls` · `feat(web): add audit log view` · `feat(web): add account deletion and privacy page` · `test(web): cover dashboard settings and deletion`
 - Notes: Built 2026-10-04 and merged to main (CI run 37193321192 green). 686 tests. Automated equivalents of the manual checklist pass: a lower per-order limit rejects the next proposal; denylist and allowlist; currency change refused with open intents; kill switch on/off round trip with the header bar; live mode disabled with the failing gates (and a forced POST refused); audit log newest first with escaped details; deletion leaves zero rows in every table with a user_id column (found from information_schema), plus codes, tokens, executions, and webhook_events, while another user's rows are untouched; every POST refuses a missing CSRF token; every page except /, /privacy, /login needs a session. The deletion test exposed a sync isolation bug (fixed: `fix(sync): link accounts only to the user's own connection rows`). Extra commit: `docs: record phase 11 dashboard decisions`. See D22. The browser walk-through is Aaryan's.
 
-### PHASE 12 — Webhooks (M8) [not started]
+### PHASE 12 — Webhooks (M8) [in progress — human checks pending]
 
-- [ ] Signed fixture accepted; unsigned/tampered → 401; duplicate ignored; stale flagged
+- [x] Signed fixture accepted; unsigned/tampered → 401; duplicate ignored; stale flagged
 - [ ] **Real** SnapTrade Sandbox webhook verifies on the deployed URL
-- [ ] `CONNECTION_BROKEN` (fixture) blocks proposals for that connection's accounts
-- [ ] Commits: `feat(webhooks): add python-compatible canonical json` · `feat(webhooks): verify signature and store events idempotently` · `feat(webhooks): process events as resync hints` · `test(webhooks): cover signature dedupe stale and real fixture`
-- Notes:
+- [x] `CONNECTION_BROKEN` (fixture) blocks proposals for that connection's accounts
+- [x] Commits: `feat(webhooks): add python-compatible canonical json` · `feat(webhooks): verify signature and store events idempotently` · `feat(webhooks): process events as resync hints` · `test(webhooks): cover signature dedupe stale and real fixture`
+- Notes: Built 2026-10-04 and merged to main (CI run 37193855059 green). 710 tests + 1 skipped (the real-fixture test, which runs once `tests/fixtures/webhook-real.json` and the real consumer key exist). Canonical JSON cross-checked against strings and an HMAC produced by Python 3.13. Signed event (sent pretty-printed, keys reordered) → 200, stored, processed; missing/wrong-key/tampered signature → 401 with nothing stored; duplicate webhookId → one row; stale → flagged and debounced (no extra SnapTrade call); foreign client id → ignored; non-JSON → 400; > 64 KB → 413; CONNECTION_BROKEN then CONNECTION_FIXED blocks then unblocks proposals; NEW_ACCOUNT_AVAILABLE adds the account not allowed with a dashboard notice (migration 0004 `first_seen_at`); ACCOUNT_REMOVED → present=false; holdings update drops the cache; failures retried by the sweeper; 30-day purge. Extra commits: `refactor(oauth-server): share the byte-limited body reader`, `docs: record phase 12 webhook decisions`. See D23. Webhook URL configuration and the real fixture are Aaryan's (after P5).
 
 ### PHASE 13 — Live Executor (M9) — ⛔ only if SnapTrade enabled `trade` [not started]
 

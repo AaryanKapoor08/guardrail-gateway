@@ -14,8 +14,8 @@
 | 5 | P9 OAuth authorization server for MCP | **done** (624 tests, CI green) |
 | 6 | P10 MCP server + tools | **done** (647 tests, CI green) |
 | 7 | P11 Dashboard polish | **done** (686 tests, CI green) |
-| 8 | P12 Webhooks | running |
-| 9 | P14 2-minute instant demo | pending |
+| 8 | P12 Webhooks | **done** (710 tests, CI green) |
+| 9 | P14 2-minute instant demo | running |
 | 10 | P15 Submission docs (README, THREAT_MODEL, demo script; no video) | pending |
 
 **Skipped tonight:** P5 (deploy + real API spike: needs Aaryan + Render), P13 (live trading: SnapTrade hasn't enabled `trade`).
@@ -27,7 +27,7 @@
 - P9: after deploy, `curl https://<host>/.well-known/oauth-authorization-server` and check `client_id_metadata_document_supported: true` + `token_endpoint_auth_methods_supported: ["none"]`; check which X-Forwarded-For entry Render puts the visitor IP in (D20).
 - P10 (⛔ Q5 gate, after deploy): add the connector in Claude web + Claude Code; approve one order; check `oauth.client_seen` logs for the real client_id URLs; MCP Inspector lists 8 tools; revoking the app on /apps makes Claude's next call fail.
 - P11: in the browser, try each setting (policy limit, deny/allow list, kill switch, mode button, audit log, delete a throwaway account) plus one proposal.
-- P12: set the webhook URL in the SnapTrade dashboard; trigger one real Sandbox webhook; save the fixture.
+- P12: set the webhook URL `https://<host>/webhooks/snaptrade` in the SnapTrade dashboard; set `WEBHOOK_LOG_BODIES=true` on Render, trigger one Sandbox webhook, save `{ body, signature }` to `tests/fixtures/webhook-real.json`, set the flag back to false, run `SNAPTRADE_CONSUMER_KEY=... npx vitest run tests/unit/webhook-real-fixture.test.ts` (D23).
 - P14: 2-minute stopwatch test by a fresh person.
 
 ## Environment facts for subagents
@@ -49,3 +49,4 @@
 - 2026-10-04: P9 done: 624 tests, CI green, decisions D20.
 - 2026-10-04: P10 done: 647 tests, CI green, decisions D21.
 - 2026-10-04: P11 done: 686 tests, CI green, decisions D22.
+- 2026-10-04: P12 done: 710 tests (+1 skipped real-fixture), CI green, decisions D23.
