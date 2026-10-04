@@ -6,6 +6,8 @@ import { disconnectUser } from '../auth/disconnect.js';
 import { destroySession, loadSession, requireSession, type SignedInEnv } from '../auth/sessions.js';
 import type { Deps } from '../deps.js';
 import { listPaperPositions } from '../executors/paper.js';
+import { grantHasTradeScope } from '../intents/context.js';
+import { liveModeProblems } from '../intents/controls.js';
 import { cancelIntent } from '../intents/decisions.js';
 import { listRecentIntents } from '../intents/service.js';
 import { NeedsReauthError, NotFoundError } from '../lib/errors.js';
@@ -37,11 +39,14 @@ async function syncForPageLoad(deps: Deps, userId: string): Promise<SyncProblem>
 async function showDashboard(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
   const { session, user } = c.var;
   const syncProblem = await syncForPageLoad(deps, user.id);
-  const [accounts, pendingIntents, paperPositions] = await Promise.all([
-    listUserAccounts(deps, user.id),
-    listRecentIntents(deps, user.id, { limit: 20, statuses: ['PENDING_APPROVAL'] }),
-    listPaperPositions(deps.db, user.id),
-  ]);
+  const [accounts, pendingIntents, paperPositions, ordersAtBroker, hasTradeScope] =
+    await Promise.all([
+      listUserAccounts(deps, user.id),
+      listRecentIntents(deps, user.id, { limit: 20, statuses: ['PENDING_APPROVAL'] }),
+      listPaperPositions(deps.db, user.id),
+      listRecentIntents(deps, user.id, { limit: 20, statuses: ['SUBMITTED', 'UNKNOWN'] }),
+      grantHasTradeScope(deps.db, user.id),
+    ]);
   return renderPage(
     c,
     <DashboardPage
@@ -51,6 +56,8 @@ async function showDashboard(deps: Deps, c: Context<SignedInEnv>): Promise<Respo
       mcpUrl={`${deps.env.APP_BASE_URL}/mcp`}
       pendingIntents={pendingIntents}
       paperPositions={paperPositions}
+      ordersAtBroker={ordersAtBroker}
+      liveModeProblems={liveModeProblems(deps, user, hasTradeScope)}
     />,
   );
 }

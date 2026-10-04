@@ -18,7 +18,91 @@ type DashboardProps = {
   readonly mcpUrl: string;
   readonly pendingIntents: readonly IntentView[];
   readonly paperPositions: readonly PaperPosition[];
+  // Live orders already at the broker; the kill switch can't recall them (V§4.6).
+  readonly ordersAtBroker: readonly IntentView[];
+  // Why live mode can't be switched on right now (empty when it can).
+  readonly liveModeProblems: readonly string[];
 };
+
+function KillSwitch(props: {
+  isOn: boolean;
+  ordersAtBroker: readonly IntentView[];
+  csrfToken: string;
+}) {
+  return (
+    <section class="box" id="kill-switch">
+      <h2>Kill switch: {props.isOn ? 'ON' : 'off'}</h2>
+      <p>
+        {props.isOn
+          ? 'Every order the AI proposes is refused, and nothing can be approved.'
+          : 'Turning it on cancels every order waiting for approval and refuses all new ones until you turn it off.'}
+      </p>
+      {props.isOn && props.ordersAtBroker.length > 0 ? (
+        <div class="banner danger">
+          <p>
+            These orders were already sent to your broker and can't be recalled from here. Cancel
+            them at your broker if you need to:
+          </p>
+          <ul>
+            {props.ordersAtBroker.map((intent) => (
+              <li>
+                <a href={`/approvals/${intent.id}`}>
+                  {sideLabel(intent.side)} {intent.quantity} {intent.symbol}
+                </a>{' '}
+                in {intent.accountName}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <form method="post" action="/kill-switch">
+        <CsrfField token={props.csrfToken} />
+        <input type="hidden" name="state" value={props.isOn ? 'off' : 'on'} />
+        <button type="submit" class={props.isOn ? 'secondary' : 'danger'}>
+          {props.isOn ? 'Turn the kill switch off' : 'Turn the kill switch on'}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function ModeSwitch(props: {
+  mode: 'paper' | 'live';
+  liveModeProblems: readonly string[];
+  csrfToken: string;
+}) {
+  const canGoLive = props.liveModeProblems.length === 0;
+  return (
+    <section class="box">
+      <h2>Mode: {props.mode === 'paper' ? 'paper (simulated)' : 'LIVE (real orders)'}</h2>
+      <p>
+        Paper mode simulates fills in a ledger here; nothing is sent to a broker. Live mode sends
+        approved orders to your broker.
+      </p>
+      <form method="post" action="/mode" class="inline">
+        <CsrfField token={props.csrfToken} />
+        <input type="hidden" name="mode" value={props.mode === 'paper' ? 'live' : 'paper'} />
+        {props.mode === 'paper' ? (
+          <button type="submit" disabled={!canGoLive}>
+            Switch to live mode
+          </button>
+        ) : (
+          <button type="submit">Switch to paper mode</button>
+        )}
+      </form>
+      {props.mode === 'paper' && !canGoLive ? (
+        <>
+          <p>Live mode isn't available:</p>
+          <ul>
+            {props.liveModeProblems.map((problem) => (
+              <li>{problem}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
 
 function ReconnectBanner() {
   return (
@@ -224,6 +308,16 @@ export function DashboardPage(props: DashboardProps) {
       </section>
       <PendingApprovals intents={props.pendingIntents} />
       <PaperPositions positions={props.paperPositions} />
+      <KillSwitch
+        isOn={signedIn.user.killSwitch}
+        ordersAtBroker={props.ordersAtBroker}
+        csrfToken={csrfToken}
+      />
+      <ModeSwitch
+        mode={signedIn.user.mode}
+        liveModeProblems={props.liveModeProblems}
+        csrfToken={csrfToken}
+      />
       <McpBox mcpUrl={props.mcpUrl} />
       <section class="box">
         <h2>Disconnect SnapTrade</h2>
@@ -237,6 +331,9 @@ export function DashboardPage(props: DashboardProps) {
             Disconnect SnapTrade
           </button>
         </form>
+        <p>
+          Or <a href="/account/delete">delete your account</a> and everything we store.
+        </p>
       </section>
       <p class="notice">Not financial advice. Guardrail Gateway never recommends trades.</p>
     </Layout>

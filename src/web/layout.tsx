@@ -9,9 +9,19 @@ type LayoutProps = {
 };
 
 function SignedInNav(props: { signedIn: SignedIn }) {
+  const { user } = props.signedIn;
   return (
     <nav>
+      {user.mode === 'live' ? (
+        <span class="badge live">LIVE mode</span>
+      ) : (
+        <span class="badge">Paper mode</span>
+      )}
       <a href="/dashboard">Dashboard</a>
+      <a href="/intents">Orders</a>
+      <a href="/policy">Policy</a>
+      <a href="/audit">Audit log</a>
+      <a href="/apps">AI apps</a>
       <form method="post" action="/logout" class="inline">
         <CsrfField token={props.signedIn.session.csrfToken} />
         <button type="submit" class="link">
@@ -40,6 +50,12 @@ export function Layout(props: LayoutProps) {
           </a>
           {props.signedIn === undefined ? null : <SignedInNav signedIn={props.signedIn} />}
         </header>
+        {props.signedIn?.user.killSwitch === true ? (
+          <div class="kill-switch-on">
+            Kill switch is ON: every order the AI proposes is refused.{' '}
+            <a href="/dashboard#kill-switch">Turn it off on the dashboard</a>
+          </div>
+        ) : null}
         <main>{props.children}</main>
         <footer>
           <p>Not financial advice. Guardrail Gateway never recommends trades.</p>
