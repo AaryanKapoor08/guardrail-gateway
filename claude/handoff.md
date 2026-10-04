@@ -11,8 +11,8 @@
 | 2 | P3 Sign-in + P4 Accounts sync/dashboard | **done** (167 tests, CI green) |
 | 3 | P6 Token lifecycle + P7 Policy engine/state machine | **done** (503 tests, CI green) |
 | 4 | P8 Intents, approvals, paper executor | **done** (563 tests, CI green) |
-| 5 | P9 OAuth authorization server for MCP | running |
-| 6 | P10 MCP server + tools | pending |
+| 5 | P9 OAuth authorization server for MCP | **done** (624 tests, CI green) |
+| 6 | P10 MCP server + tools | running |
 | 7 | P11 Dashboard polish | pending |
 | 8 | P12 Webhooks | pending |
 | 9 | P14 2-minute instant demo | pending |
@@ -24,6 +24,7 @@
 - P8: run `npx tsx scripts/demo-flow.ts`-style propose against the dev DB, approve in the browser, see the paper position; tick the V§9.2 approval-page checklist.
 - P3: real sign-in at http://localhost:3000 with the SnapTrade Personal test user; click Deny once.
 - P5: create a Render account, then deploy (controller does it via the API with `RENDER_API_KEY`); UptimeRobot monitor; real API capability spike; apply any shape fixes.
+- P9: after deploy, `curl https://<host>/.well-known/oauth-authorization-server` and check `client_id_metadata_document_supported: true` + `token_endpoint_auth_methods_supported: ["none"]`; check which X-Forwarded-For entry Render puts the visitor IP in (D20).
 - P10: add the connector in Claude web + Claude Code; approve one order.
 - P12: set the webhook URL in the SnapTrade dashboard; trigger one real Sandbox webhook; save the fixture.
 - P14: 2-minute stopwatch test by a fresh person.
@@ -44,3 +45,4 @@
 - 2026-10-04: P6 done: 178 tests, CI green, decisions D17.
 - 2026-10-04: P7 done: 503 tests, CI green, decisions D18.
 - 2026-10-04: P8 done: 563 tests, CI green, decisions D19.
+- 2026-10-04: P9 done: 624 tests, CI green, decisions D20.

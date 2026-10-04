@@ -2,7 +2,7 @@
 
 Update this file as you complete each phase (use /progress-save).
 
-**Current Phase: PHASE 9 — Our OAuth Authorization Server for MCP Clients (M6, part 1)** (P5 deferred to Aaryan)
+**Current Phase: PHASE 10 — MCP Server + Tools (M6, part 2)** (P5 deferred to Aaryan)
 
 Last Updated: 2026-10-04
 
@@ -19,6 +19,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 6 complete in code and merged to main (CI green). Single-flight refresh under a grant row lock (hash check reuses a token another request refreshed), 5-minute refresh margin, 401 → refresh once → retry once → needs_reauth, invalid_grant clears tokens, POST /disconnect revokes at SnapTrade and cuts off MCP grants. 178 tests. Decision D17. Next: PHASE 7.
 - 2026-10-04 (single-agent build): PHASE 7 complete and merged (CI green). Pure policy engine (16 rules, evaluate, describePolicy) and intent state machine; 221-pair table test; 100% branch coverage enforced in CI. 503 tests. Decision D18. Next: PHASE 8 (built on documented SnapTrade shapes; P5 gate waived by Aaryan).
 - 2026-10-04 (single-agent build): PHASE 8 complete in code and merged to main (CI green). Propose → approve → paper fill flow: symbol resolution, prefetch outside the lock, per-user lock + dbCounts + evaluate inside it, idempotency, approval page (V§9.2) with CSRF POSTs, paper executor and ledger, kill switch/mode service functions, intent history and cancel, disconnect cancels pending intents, best-effort Resend email, 60s sweeper, scripts/demo-flow.ts. 563 tests. Decision D19. Human checks pending: dev-DB run + browser approval, V§9.2 manual checklist. Next: PHASE 9.
+- 2026-10-04 (single-agent build): PHASE 9 complete in code and merged to main (CI green). Hand-written OAuth authorization server for MCP clients: PRM + AS metadata, CIMD with host allowlist and bounded fetch, loopback redirect matching, consent page (requester host, redirect host, loopback warning), single-use 60 s codes, PKCE S256, rotating opaque tokens with reuse detection, RFC 7009 revocation, verifyAccessToken for the MCP gate, per-IP rate limit, Connected AI apps page. 624 tests. Decision D20. Human check pending: curl the deployed AS metadata (after P5). Next: PHASE 10.
 
 ---
 
@@ -110,13 +111,13 @@ Last Updated: 2026-10-04
 - [x] Commits: `feat(snaptrade): add positions balances quotes and symbol search` · `feat(intents): propose orders with idempotency and policy checks` · `feat(approvals): add approval page with csrf post actions` · `feat(paper): simulate fills in paper ledger` · `feat(jobs): add sweeper for expiry and cleanup` · `test(intents): cover races expiry kill switch and idempotency`
 - Notes: Built 2026-10-04 and merged to main (CI run 37191422996 green). 563 tests. Demo script output: PENDING_APPROVAL → FILLED at 32.1 with the 7-row audit trail (sign-in, sync, proposed, pending_approval, approved, executing, filled). Double approve → one execution row; two intents over the daily limit approved together → one FILLED, one POLICY_REJECTED; expiry, kill switch, mode change, idempotency (incl. two simultaneous retries), quotes down at approval (page 503, intent still pending, no execution), unknown/ambiguous symbol, disconnect cancelling pending intents. An automated page test checks every V§9.2 text element; the manual browser checklist and the dev-DB run wait for Aaryan (need a real sign-in). Fixed a bug in the inherited WIP: paper limit orders compared against their own limit price, so they always filled; prefetch now returns the fresh market price separately. Extra commit: `docs: record phase 8 intent and approval decisions`. See D19.
 
-### PHASE 9 — Our OAuth Authorization Server for MCP Clients (M6, part 1) [not started]
+### PHASE 9 — Our OAuth Authorization Server for MCP Clients (M6, part 1) [in progress — human checks pending]
 
-- [ ] All OAuth server tests pass
+- [x] All OAuth server tests pass
 - [ ] `curl https://<host>/.well-known/oauth-authorization-server` shows `client_id_metadata_document_supported: true` and `token_endpoint_auth_methods_supported: ["none"]`
-- [ ] Token endpoint responds in < 200ms locally (no outbound calls)
-- [ ] Commits: `feat(oauth-server): publish protected resource and as metadata` · `feat(oauth-server): validate cimd clients and redirect uris` · `feat(oauth-server): add consent and code issuance` · `feat(oauth-server): issue rotating opaque tokens with pkce` · `feat(web): list and revoke connected ai apps` · `test(oauth-server): cover pkce cimd rotation and reuse`
-- Notes:
+- [x] Token endpoint responds in < 200ms locally (no outbound calls)
+- [x] Commits: `feat(oauth-server): publish protected resource and as metadata` · `feat(oauth-server): validate cimd clients and redirect uris` · `feat(oauth-server): add consent and code issuance` · `feat(oauth-server): issue rotating opaque tokens with pkce` · `feat(web): list and revoke connected ai apps` · `test(oauth-server): cover pkce cimd rotation and reuse`
+- Notes: Built 2026-10-04 and merged to main (CI run 37192218744 green). 624 tests (42 OAuth integration + unit tests for the rate limiter and redirect matching). The metadata test asserts both fields locally; the curl against the deployed host waits for P5 (Aaryan). Token endpoint: 7–10 ms locally over 10 exchanges; a test asserts no outbound fetch. CSP moved to web/csp.ts so the consent page can allow the client's redirect origin in form-action. Extra commit: `docs: record phase 9 oauth server decisions`. See D20.
 
 ### PHASE 10 — MCP Server + Tools (M6, part 2) [not started]
 
