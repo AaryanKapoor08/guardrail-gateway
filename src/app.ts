@@ -2,6 +2,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
+import { registerApprovalRoutes } from './approvals/routes.js';
 import { originCheck } from './auth/csrf.js';
 import { registerLoginRoutes } from './auth/login-routes.js';
 import type { Env } from './config/env.js';
@@ -51,6 +52,7 @@ export function createApp(deps: Deps): Hono {
 
   registerLoginRoutes(app, deps);
   registerWebRoutes(app, deps);
+  registerApprovalRoutes(app, deps);
 
   return app;
 }

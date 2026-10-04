@@ -1,6 +1,11 @@
 import type { AccountListItem } from '../../accounts/service.js';
 import { CsrfField } from '../../auth/csrf.js';
 import type { SignedIn } from '../../auth/sessions.js';
+import type { PaperPosition } from '../../executors/paper.js';
+import type { IntentView } from '../../intents/view.js';
+import { fmtMoney } from '../../lib/money.js';
+import { fmtToronto } from '../../lib/time.js';
+import { orderTypeLabel, sideLabel } from '../format.js';
 import { Layout } from '../layout.js';
 
 // Why the account list may be out of date on this page load.
@@ -11,6 +16,8 @@ type DashboardProps = {
   readonly accounts: readonly AccountListItem[];
   readonly syncProblem: SyncProblem;
   readonly mcpUrl: string;
+  readonly pendingIntents: readonly IntentView[];
+  readonly paperPositions: readonly PaperPosition[];
 };
 
 function ReconnectBanner() {
@@ -111,6 +118,68 @@ function McpBox(props: { mcpUrl: string }) {
   );
 }
 
+function PendingApprovals(props: { intents: readonly IntentView[] }) {
+  return (
+    <section>
+      <h2>Pending approvals</h2>
+      {props.intents.length === 0 ? (
+        <p>No orders are waiting for your approval.</p>
+      ) : (
+        <ul>
+          {props.intents.map((intent) => (
+            <li>
+              <a href={`/approvals/${intent.id}`}>
+                {sideLabel(intent.side)} {intent.quantity} {intent.symbol} ({orderTypeLabel(intent)}
+                , {intent.mode})
+              </a>{' '}
+              in {intent.accountName}, proposed by {intent.proposedBy}. Expires{' '}
+              {fmtToronto(intent.expiresAt)}.
+            </li>
+          ))}
+        </ul>
+      )}
+      <p>
+        <a href="/intents">See all recent orders</a>
+      </p>
+    </section>
+  );
+}
+
+function PaperPositions(props: { positions: readonly PaperPosition[] }) {
+  if (props.positions.length === 0) {
+    return null;
+  }
+  return (
+    <section>
+      <h2>Paper positions (simulated)</h2>
+      <p class="notice">
+        Changes from approved paper orders. Nothing here is held at a real broker. A negative
+        quantity is a simulated sale of shares you hold for real.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Symbol</th>
+            <th>Quantity</th>
+            <th>Average cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.positions.map((position) => (
+            <tr>
+              <td>{position.accountName}</td>
+              <td>{position.symbol}</td>
+              <td>{position.quantity}</td>
+              <td>{fmtMoney(position.avgCost, position.currency)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 export function DashboardPage(props: DashboardProps) {
   const { signedIn } = props;
   const csrfToken = signedIn.session.csrfToken;
@@ -150,10 +219,8 @@ export function DashboardPage(props: DashboardProps) {
           </button>
         </form>
       </section>
-      <section>
-        <h2>Pending approvals</h2>
-        <p>No orders are waiting for your approval.</p>
-      </section>
+      <PendingApprovals intents={props.pendingIntents} />
+      <PaperPositions positions={props.paperPositions} />
       <McpBox mcpUrl={props.mcpUrl} />
       <section class="box">
         <h2>Disconnect SnapTrade</h2>

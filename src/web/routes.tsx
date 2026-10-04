@@ -5,11 +5,15 @@ import { verifyCsrf } from '../auth/csrf.js';
 import { disconnectUser } from '../auth/disconnect.js';
 import { destroySession, loadSession, requireSession, type SignedInEnv } from '../auth/sessions.js';
 import type { Deps } from '../deps.js';
+import { listPaperPositions } from '../executors/paper.js';
+import { cancelIntent } from '../intents/decisions.js';
+import { listRecentIntents } from '../intents/service.js';
 import { NeedsReauthError, NotFoundError } from '../lib/errors.js';
 import { syncIfStale, syncUserConnectionsAndAccounts } from '../snaptrade/sync.js';
 import { DashboardPage, type SyncProblem } from './pages/dashboard.js';
 import { ErrorPage } from './pages/error.js';
 import { HomePage } from './pages/home.js';
+import { IntentsPage } from './pages/intents.js';
 import { renderPage } from './render.js';
 
 const AllowFormSchema = z.object({ allowed: z.enum(['true', 'false']) });
@@ -31,7 +35,11 @@ async function syncForPageLoad(deps: Deps, userId: string): Promise<SyncProblem>
 async function showDashboard(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
   const { session, user } = c.var;
   const syncProblem = await syncForPageLoad(deps, user.id);
-  const accounts = await listUserAccounts(deps, user.id);
+  const [accounts, pendingIntents, paperPositions] = await Promise.all([
+    listUserAccounts(deps, user.id),
+    listRecentIntents(deps, user.id, { limit: 20, statuses: ['PENDING_APPROVAL'] }),
+    listPaperPositions(deps.db, user.id),
+  ]);
   return renderPage(
     c,
     <DashboardPage
@@ -39,6 +47,8 @@ async function showDashboard(deps: Deps, c: Context<SignedInEnv>): Promise<Respo
       accounts={accounts}
       syncProblem={syncProblem}
       mcpUrl={`${deps.env.APP_BASE_URL}/mcp`}
+      pendingIntents={pendingIntents}
+      paperPositions={paperPositions}
     />,
   );
 }
@@ -107,6 +117,31 @@ async function disconnect(deps: Deps, c: Context<SignedInEnv>): Promise<Response
   return renderPage(c, <ErrorPage title="Disconnected" message={message} />);
 }
 
+const INTENT_HISTORY_LIMIT = 50;
+
+async function showIntents(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
+  const { session, user } = c.var;
+  const intents = await listRecentIntents(deps, user.id, { limit: INTENT_HISTORY_LIMIT });
+  return renderPage(c, <IntentsPage signedIn={{ session, user }} intents={intents} />);
+}
+
+async function cancelFromHistory(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
+  const { session, user } = c.var;
+  try {
+    await cancelIntent(deps, { userId: user.id, intentId: c.req.param('id') ?? '', actor: 'user' });
+  } catch (error) {
+    if (!(error instanceof NotFoundError)) {
+      throw error;
+    }
+    return renderPage(
+      c,
+      <ErrorPage title="Order not found" message={error.message} signedIn={{ session, user }} />,
+      404,
+    );
+  }
+  return c.redirect('/intents');
+}
+
 export function registerWebRoutes(app: Hono, deps: Deps): void {
   app.get('/', async (c) => {
     const signedIn = await loadSession(deps, c);
@@ -116,6 +151,10 @@ export function registerWebRoutes(app: Hono, deps: Deps): void {
   app.get('/dashboard', requireSession(deps), (c) => showDashboard(deps, c));
   app.post('/accounts/refresh', requireSession(deps), verifyCsrf, (c) => refreshAccounts(deps, c));
   app.post('/disconnect', requireSession(deps), verifyCsrf, (c) => disconnect(deps, c));
+  app.get('/intents', requireSession(deps), (c) => showIntents(deps, c));
+  app.post('/intents/:id/cancel', requireSession(deps), verifyCsrf, (c) =>
+    cancelFromHistory(deps, c),
+  );
   app.post('/accounts/:ref/allow', requireSession(deps), verifyCsrf, (c) =>
     changeAccountAllowed(deps, c),
   );
