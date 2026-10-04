@@ -7,20 +7,20 @@ import { originCheck } from './auth/csrf.js';
 import { registerLoginRoutes } from './auth/login-routes.js';
 import type { Env } from './config/env.js';
 import type { Deps } from './deps.js';
+import { registerAuthorizeRoutes } from './oauth-server/authorize.js';
+import { registerMetadataRoutes } from './oauth-server/metadata.js';
+import { registerRevokeRoutes } from './oauth-server/revoke.js';
+import { registerTokenRoutes } from './oauth-server/token.js';
+import { contentSecurityPolicy } from './web/csp.js';
+import { limitPerIp } from './web/rate-limit.js';
 import { registerWebRoutes } from './web/routes.js';
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
 
-// V§13: no framing (clickjacking), no third-party anything, forms only post to us, no referrer
-// leaks of approval URLs. HSTS only in production, where the site is always HTTPS.
+// V§13: no framing (clickjacking), no referrer leaks of approval URLs. HSTS only in production,
+// where the site is always HTTPS. The Content-Security-Policy is set by web/csp.ts.
 function securityHeaders(env: Env) {
   return secureHeaders({
-    contentSecurityPolicy: {
-      defaultSrc: ["'self'"],
-      frameAncestors: ["'none'"],
-      formAction: ["'self'"],
-      imgSrc: ["'self'", 'data:'],
-    },
     xFrameOptions: 'DENY',
     referrerPolicy: 'no-referrer',
     strictTransportSecurity:
@@ -32,6 +32,7 @@ export function createApp(deps: Deps): Hono {
   const app = new Hono();
 
   app.use('*', securityHeaders(deps.env));
+  app.use('*', contentSecurityPolicy());
   app.use('*', originCheck(deps.env));
   app.use(
     '/static/*',
@@ -50,6 +51,14 @@ export function createApp(deps: Deps): Hono {
     }
   });
 
+  // Per-IP limit on sign-in and every OAuth route (V§13).
+  app.use('/login', limitPerIp(deps.limiters.signInPerIp));
+  app.use('/oauth/*', limitPerIp(deps.limiters.signInPerIp));
+
+  registerMetadataRoutes(app, deps.env);
+  registerAuthorizeRoutes(app, deps);
+  registerTokenRoutes(app, deps);
+  registerRevokeRoutes(app, deps);
   registerLoginRoutes(app, deps);
   registerWebRoutes(app, deps);
   registerApprovalRoutes(app, deps);
