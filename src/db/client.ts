@@ -3,6 +3,12 @@ import pg from 'pg';
 
 export type Database = NodePgDatabase;
 
+// The `tx` handed to `db.transaction(async (tx) => …)`.
+export type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+// Helpers that may run inside or outside a transaction accept either.
+export type DatabaseExecutor = Database | Transaction;
+
 export type DatabaseConnection = {
   readonly pool: pg.Pool;
   readonly db: Database;
