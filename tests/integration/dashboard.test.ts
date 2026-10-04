@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { writeAudit } from '../../src/audit/write.js';
 import type { DatabaseConnection } from '../../src/db/client.js';
@@ -21,7 +21,7 @@ import {
   signInTestUser,
   type TestApp,
 } from '../helpers/app.js';
-import { setupTestDb, truncateAll } from '../helpers/db.js';
+import { countUserRows, setupTestDb, truncateAll } from '../helpers/db.js';
 import { allowAccount, expectIntent, intentStatus, proposeTestOrder } from '../helpers/intents.js';
 import { connectClaude } from '../helpers/oauth.js';
 
@@ -208,20 +208,8 @@ describe('audit log', () => {
   });
 });
 
-// Every table with a user_id column, found from the database itself, so a table added later
-// is checked too.
-async function rowsLeftFor(userId: string): Promise<Record<string, number>> {
-  const tables = await testApp.deps.db.execute<{ table_name: string }>(
-    sql`select table_name from information_schema.columns where table_schema = 'public' and column_name = 'user_id'`,
-  );
-  const counts: Record<string, number> = {};
-  for (const { table_name } of tables.rows) {
-    const result = await testApp.deps.db.execute<{ count: number }>(
-      sql`select count(*)::int as count from ${sql.identifier(table_name)} where user_id = ${userId}`,
-    );
-    counts[table_name] = result.rows[0]?.count ?? -1;
-  }
-  return counts;
+function rowsLeftFor(userId: string): Promise<Record<string, number>> {
+  return countUserRows(testApp.deps.db, userId);
 }
 
 async function buildRichHistory(): Promise<{ intentIds: string[]; grantIds: string[] }> {

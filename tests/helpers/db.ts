@@ -23,3 +23,19 @@ export async function truncateAll(db: Database): Promise<void> {
   const tableList = ALL_TABLE_NAMES.map((name) => `"${name}"`).join(', ');
   await db.execute(sql.raw(`TRUNCATE ${tableList} RESTART IDENTITY CASCADE`));
 }
+
+// Rows left for a user in every table with a user_id column, found from the database itself so
+// a table added later is checked too (account deletion and demo cleanup tests).
+export async function countUserRows(db: Database, userId: string): Promise<Record<string, number>> {
+  const tables = await db.execute<{ table_name: string }>(
+    sql`select table_name from information_schema.columns where table_schema = 'public' and column_name = 'user_id'`,
+  );
+  const counts: Record<string, number> = {};
+  for (const { table_name } of tables.rows) {
+    const result = await db.execute<{ count: number }>(
+      sql`select count(*)::int as count from ${sql.identifier(table_name)} where user_id = ${userId}`,
+    );
+    counts[table_name] = result.rows[0]?.count ?? -1;
+  }
+  return counts;
+}

@@ -132,6 +132,24 @@ export async function signInTestUser(
   };
 }
 
+// The signed-in user behind a response that set a new session cookie (e.g. POST /demo/start).
+export async function signedInFromResponse(
+  testApp: TestApp,
+  response: Response,
+): Promise<SignedInTestUser> {
+  const sessionId = readSetCookies(response)[SESSION_COOKIE];
+  if (sessionId === undefined || sessionId === '') {
+    throw new Error(`test setup: no session cookie (status ${response.status})`);
+  }
+  const session = await findSession(testApp, sessionId);
+  return {
+    userId: session.userId,
+    sessionId,
+    cookie: `${SESSION_COOKIE}=${sessionId}`,
+    csrfToken: session.csrfToken,
+  };
+}
+
 // A form POST as a browser on our site sends it: our Origin, form encoding, and cookies.
 export function postForm(
   testApp: TestApp,
