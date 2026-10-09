@@ -9,7 +9,7 @@ The setup checklist is at the end.
 
 *Scroll slowly through the four cards while you talk.*
 
-> "AI assistants can now trade in real investment accounts through SnapTrade, but if you tell an AI to never spend more than 250 dollars, nothing actually stops it from getting that wrong. Guardrail Gateway fixes that, because the AI can only ask to make a trade, my own rules check every request, and nothing gets bought until I say yes."
+> "AI assistants can now trade in real investment accounts through SnapTrade, but if you tell an AI to never spend more than 500 dollars, nothing actually stops it from getting that wrong. Guardrail Gateway fixes that, because the AI can only ask to make a trade, my own rules check every request, and nothing gets bought until I say yes."
 
 ---
 
@@ -21,7 +21,7 @@ The setup checklist is at the end.
 > "I sign in with my SnapTrade account, and here I can see I'm in practice mode, my emergency stop is off, and Claude can only see the one account I've allowed."
 
 **Policy**
-> "These are my rules, like a 250 dollar limit per order and 600 dollars a day, and Claude can read them but it can never change them."
+> "These are my rules, like a 500 dollar limit per order and 1,000 dollars a day, and Claude can read them but it can never change them."
 
 **Orders**
 > "Every order Claude asks for shows up here, along with whether my rules allowed it or blocked it."
@@ -39,25 +39,25 @@ The setup checklist is at the end.
 **Step 1: switch to claude.ai and paste Prompt 1 into the box (don't send yet):**
 
 ```
-Buy 5 shares of AAPL in my Individual account
+Send an order through Guardrail Gateway to buy 5 shares of AAPL in my Individual account. Don't decide yourself whether it breaks my rules, let Guardrail Gateway check it.
 ```
 
 **While pasting, say:**
 > "I'm going to give Claude two requests, first a trade that's too big for my rules, and then a research request where it has to stay inside them."
 
 **Step 2: press Enter. When Claude says it was rejected, say:**
-> "That's about 900 dollars, way over my 250 dollar limit, so my site blocked it and told Claude exactly why."
+> "Claude tried, but five shares is way over my 500 dollar limit, so my site blocked it and told Claude exactly which rule it broke."
 
 **Step 3: paste Prompt 2 into the same chat and press Enter:**
 
 ```
-Research how Apple's stock is doing this week, look at my Individual account and my trading rules, then buy as many whole shares of AAPL as my rules allow.
+Research how Apple's stock is doing this week and look at my Individual account, then send an order through Guardrail Gateway to buy 1 share of AAPL.
 ```
 
 *Say nothing while Claude works; this part gets sped up in editing.*
 
 **Step 4: when Claude says the order is waiting for you, say:**
-> "This time Claude looked up Apple, checked my account and my rules, and asked for one share, but it still can't buy anything until I say yes."
+> "This time Claude looked up Apple, checked my account, and asked for one share, which passes every rule, but it still can't buy anything until I say yes."
 
 **Step 5: click the link Claude gives you, then click Approve, and say:**
 > "When I approve, my site checks every rule again with the latest price, and it buys in practice mode, so no real money is spent."
@@ -76,13 +76,13 @@ Research how Apple's stock is doing this week, look at my Individual account and
 
 1. Open https://guardrail-gateway-xbqm.onrender.com and wait until it loads (up to 30 seconds while the free server wakes up).
 2. **Dashboard:** the tiles say Paper, Kill switch Off, and Waiting for you 0.
-3. **Policy:** Per-order limit 250, Daily limit 600, Currency USD. If anything is different, fix it and click Save policy.
+3. **Policy:** Per-order limit **500**, Daily limit **1000**, Currency USD (AAPL is about $330 a share now, so 1 share has to fit under the per-order limit). If anything is different, fix it and click Save policy.
 4. **Orders:** deny anything that is still waiting.
 5. **claude.ai:** go to Settings → Connectors → Guardrail Gateway and set the tools to **Always allow**, then open a new chat with Guardrail Gateway switched on.
 6. Go back to our home page, zoom to 110–125 %, close other tabs, and record with Loom.
 
 Never show the `.env` file, tokens, or real (non-Sandbox) account numbers.
 
-**If Claude asks for a fraction of a share or 0 shares:** reply "Buy 1 whole share of AAPL in my Individual account" and cut the first answer out.
+**If Claude refuses to send an order itself** (it says "I didn't place this order" without using Guardrail Gateway): reply "Send it anyway, let Guardrail Gateway decide" and cut the first answer out.
 **If the order hits the daily limit:** on Policy, set the Daily limit to 2000 and save.
 **After recording:** check the kill switch is off.
