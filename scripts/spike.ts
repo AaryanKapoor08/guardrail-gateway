@@ -11,7 +11,17 @@ import { type SnapTradeRequest, snaptradeFetch } from '../src/snaptrade/api.js';
 
 // Values safe to show: tickers, exchange and currency codes, security types. Everything else
 // (ids, account numbers, names, amounts) is replaced by its type.
-const SHOWN_KEYS = new Set(['symbol', 'raw_symbol', 'code', 'mic_code', 'raw_type', 'status']);
+const SHOWN_KEYS = new Set([
+  'symbol',
+  'raw_symbol',
+  'code',
+  'mic_code',
+  'raw_type',
+  'status',
+  'kind',
+  'exchange',
+  'currency',
+]);
 const MAX_ARRAY_ITEMS = 2;
 
 function describeShape(value: unknown, key = ''): unknown {
@@ -68,6 +78,33 @@ async function pickAccountId(deps: Deps, userId: string): Promise<string | undef
   return row?.snaptradeAccountId;
 }
 
+// Symbol search may be unavailable (Sandbox answers 501), so also try quotes with the ids that
+// positions/all returns, and with plain tickers.
+async function probeQuoteFallbacks(deps: Deps, userId: string, base: string): Promise<void> {
+  const positions = await snaptradeFetch(deps, userId, {
+    method: 'GET',
+    path: `${base}/positions/all`,
+    retry: 'read',
+  });
+  const results = (positions as { results?: { instrument?: { id?: string } }[] }).results ?? [];
+  const instrumentIds = results
+    .map((position) => position.instrument?.id)
+    .filter((id) => id !== undefined)
+    .slice(0, 2);
+  await probe(deps, userId, 'GET /accounts/{id}/quotes (position instrument ids)', {
+    method: 'GET',
+    path: `${base}/quotes`,
+    query: { symbols: instrumentIds.join(','), use_ticker: 'false' },
+    retry: 'read',
+  });
+  await probe(deps, userId, 'GET /accounts/{id}/quotes (tickers AAPL,VFV.TO)', {
+    method: 'GET',
+    path: `${base}/quotes`,
+    query: { symbols: 'AAPL,VFV.TO', use_ticker: 'true' },
+    retry: 'read',
+  });
+}
+
 async function runSpike(deps: Deps, userId: string, chosenAccountId?: string): Promise<void> {
   await probe(deps, userId, 'GET /authorizations', {
     method: 'GET',
@@ -91,6 +128,7 @@ async function runSpike(deps: Deps, userId: string, chosenAccountId?: string): P
     path: `${base}/balances`,
     retry: 'read',
   });
+  await probeQuoteFallbacks(deps, userId, base);
   const symbolIds: string[] = [];
   for (const substring of ['VFV', 'AAPL']) {
     const found = await probe(deps, userId, `POST /accounts/{id}/symbols "${substring}"`, {
