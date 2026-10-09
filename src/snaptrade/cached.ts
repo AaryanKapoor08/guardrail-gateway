@@ -1,6 +1,8 @@
 import type { Deps } from '../deps.js';
+import { SnapTradeApiError } from './api.js';
 import {
   type Balance,
+  findSymbolsByTicker,
   getBalances,
   getPositions,
   getQuotes,
@@ -45,11 +47,27 @@ export function cachedSymbolSearch(
 ): Promise<SymbolMatch[]> {
   const key = `${userId}:${request.snaptradeAccountId}:${request.ticker}`;
   return deps.caches.symbolSearches.getOrLoad(key, () =>
-    searchSymbols(deps, userId, {
+    searchOrLookUpTicker(deps, userId, request),
+  );
+}
+
+async function searchOrLookUpTicker(
+  deps: Deps,
+  userId: string,
+  request: { snaptradeAccountId: string; ticker: string },
+): Promise<SymbolMatch[]> {
+  try {
+    return await searchSymbols(deps, userId, {
       snaptradeAccountId: request.snaptradeAccountId,
       substring: request.ticker,
-    }),
-  );
+    });
+  } catch (error) {
+    // 501: this broker has no symbol search, so look up the exact ticker instead (D27).
+    if (!(error instanceof SnapTradeApiError && error.status === 501)) {
+      throw error;
+    }
+    return findSymbolsByTicker(deps, userId, request);
+  }
 }
 
 // One security's quote, or null if SnapTrade returned none for it.

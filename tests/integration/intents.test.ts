@@ -173,6 +173,22 @@ describe('proposing an order', () => {
     });
   });
 
+  it('finds the security by ticker when the broker has no symbol search (Sandbox)', async () => {
+    testApp.fake.failApi(/\/symbols$/, { status: 501, body: { detail: 'Not implemented' } });
+
+    const result = await proposeTestOrder(testApp, user.userId, { account_ref: accountRef });
+
+    expect(expectIntent(result)).toMatchObject({
+      status: 'PENDING_APPROVAL',
+      symbol: 'XEQT.TO',
+      estPrice: '32.1',
+    });
+    const searches = testApp.fake.requests.filter((request) =>
+      request.url.pathname.endsWith('/symbols'),
+    );
+    expect(searches).toHaveLength(1);
+  });
+
   it('creates nothing when the broker cannot be reached for a price', async () => {
     testApp.fake.failApi(...QUOTES_DOWN);
 

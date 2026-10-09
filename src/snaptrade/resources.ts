@@ -254,7 +254,32 @@ export async function searchSymbols(
     data,
     'POST /accounts/{id}/symbols',
   );
-  return symbols.map((symbol) => ({
+  return symbols.map(toSymbolMatch);
+}
+
+// The exact ticker's security, from a quote. Some brokers (SnapTrade's Sandbox) answer 501 to
+// symbol search, but a quote by ticker returns the same security object (D27).
+export async function findSymbolsByTicker(
+  deps: Deps,
+  userId: string,
+  request: { snaptradeAccountId: string; ticker: string },
+): Promise<SymbolMatch[]> {
+  const data = await snaptradeFetch(deps, userId, {
+    method: 'GET',
+    path: accountPath(request.snaptradeAccountId, 'quotes'),
+    query: { symbols: request.ticker, use_ticker: 'true' },
+    retry: 'read',
+  });
+  const quotes = parseResponse(
+    z.array(z.object({ symbol: UniversalSymbolSchema })),
+    data,
+    'GET /accounts/{id}/quotes',
+  );
+  return quotes.map((quote) => toSymbolMatch(quote.symbol));
+}
+
+function toSymbolMatch(symbol: z.infer<typeof UniversalSymbolSchema>): SymbolMatch {
+  return {
     universalSymbolId: symbol.id,
     symbol: symbol.symbol,
     rawSymbol: symbol.raw_symbol ?? null,
@@ -262,7 +287,7 @@ export async function searchSymbols(
     currency: symbol.currency.code,
     exchange: symbol.exchange?.code ?? null,
     typeCode: symbol.type.code,
-  }));
+  };
 }
 
 const QuoteSchema = z.object({

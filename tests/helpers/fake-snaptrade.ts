@@ -124,11 +124,15 @@ function searchSymbols(fake: FakeSnapTrade, request: RecordedRequest): FakeRespo
   return { status: 200, body: matches.slice(0, 20) };
 }
 
+// `symbols` holds universal symbol ids, or tickers when `use_ticker=true`.
 function quoteSymbols(fake: FakeSnapTrade, request: RecordedRequest): FakeResponse {
-  const ids = (request.url.searchParams.get('symbols') ?? '').split(',');
-  const quotes = ids.flatMap((id) => {
-    const quote = fake.brokerage.quotes[id];
-    const symbol = fake.brokerage.symbols.find((candidate) => candidate.id === id);
+  const keys = (request.url.searchParams.get('symbols') ?? '').split(',');
+  const byTicker = request.url.searchParams.get('use_ticker') === 'true';
+  const quotes = keys.flatMap((key) => {
+    const symbol = fake.brokerage.symbols.find((candidate) =>
+      byTicker ? candidate.symbol === key : candidate.id === key,
+    );
+    const quote = symbol === undefined ? undefined : fake.brokerage.quotes[symbol.id];
     if (quote === undefined || symbol === undefined) {
       return [];
     }

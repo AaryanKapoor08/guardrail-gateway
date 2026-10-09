@@ -93,7 +93,10 @@ function isRetryable(result: AttemptResult): boolean {
   if (result.kind === 'network-error') {
     return true;
   }
-  return result.response.status === 429 || result.response.status >= 500;
+  const { status } = result.response;
+  // 501 means the broker doesn't support this call at all (Sandbox symbol search): retrying
+  // can't help.
+  return status === 429 || (status >= 500 && status !== 501);
 }
 
 function secondsFrom(value: string | null): number | null {
