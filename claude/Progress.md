@@ -63,7 +63,7 @@ Last Updated: 2026-10-04
 ### PHASE 3 — Sign in with SnapTrade (M1, part 1) [in progress — human checks pending]
 
 - [x] All OIDC integration tests pass
-- [ ] **Manual:** `npm run dev`, then sign in at `http://localhost:3000` with the SnapTrade Personal test user → dashboard shows your email
+- [x] **Manual:** sign in with the SnapTrade Personal test user → dashboard shows your email (done on the deployed URL, 2026-10-09)
 - [ ] Manual: click Deny on the SnapTrade consent screen → friendly declined page
 - [ ] Manual: `SELECT access_token_enc FROM snaptrade_grants` shows `v1:…` ciphertext, not a token
 - [ ] Logs contain no tokens or codes (search the dev console output)
@@ -72,23 +72,23 @@ Last Updated: 2026-10-04
 
 ### PHASE 4 — Accounts Sync + Dashboard (M1, part 2) [in progress — human checks pending]
 
-- [ ] Manual: after sign-in, the dashboard lists Sandbox accounts, all **not allowed**
+- [x] Manual: after sign-in, the dashboard lists Sandbox accounts, all **not allowed**
 - [ ] Manual: allowing an account persists across reloads
 - [x] DB shows only `number_last4`, never full account numbers
-- [ ] API path prefix confirmed with a real call (no `/api/v1`), noted in `DECISIONS.md`
+- [x] API path prefix confirmed with a real call (no `/api/v1`), noted in `DECISIONS.md` (D27)
 - [x] All tests pass
 - [x] Commits: `feat(snaptrade): add api client with timeouts and 429 handling` · `feat(sync): sync connections and accounts into db` · `feat(web): list accounts and allow toggles on dashboard`
 - Notes: Built 2026-10-04 and merged to main (CI run 37181379708 green). 167 tests pass. Automated equivalents pass against the fake SnapTrade: first sync stores accounts not allowed with last 4 digits only (a test asserts the full number appears nowhere in the rows or the page); allowing persists across reloads; 404 for another user's account; CSRF enforced; 429/5xx retry rules with fake timers. Migration 0002 makes raw_type and number_last4 nullable (name falls back). The real-call base-URL check and the manual browser checks wait for Aaryan (P5). See D16.
 
-### PHASE 5 — Deploy Early + API Capability Spike (M2) [not started]
+### PHASE 5 — Deploy Early + API Capability Spike (M2) [complete — keep-awake monitor pending]
 
-- [ ] `https://<service>.onrender.com/health` → `ok`
+- [x] `https://guardrail-gateway-xbqm.onrender.com/health` → `ok`
 - [ ] Keep-awake monitor (UptimeRobot / cron-job.org) pinging `/health` every 5 minutes, showing **up**
-- [ ] Sign-in works end to end on the public URL
-- [ ] Spike results recorded for Q3, Q6, Q9, Q11 (including exact symbol format for TSX, e.g. `VFV.TO`)
-- [ ] Aaryan informed of results and any fallback chosen
-- [ ] Commits: `chore(deploy): configure render start with migrations` · `chore(snaptrade): add capability spike script` · `docs: record snaptrade capability spike results`
-- Notes: Skipped in the 2026-10-04 autonomous build by agreement with Aaryan (needs Render, UptimeRobot, and real SnapTrade calls). P8+ were built on the documented response shapes; see D16 and later decisions marked "verify in P5".
+- [x] Sign-in works end to end on the public URL
+- [x] Spike results recorded for Q3, Q6, Q9, Q11 (Q9 not testable on the US-only Sandbox)
+- [x] Aaryan informed of results and any fallback chosen
+- [x] Commits: `chore(deploy): configure render start with migrations` · `chore(snaptrade): add capability spike script` · `docs: record snaptrade capability spike results`
+- Notes: 2026-10-09. Render free web service `srv-db47svbncjis73c46lt0` (Virginia), created through the Render API from the public repo; no GitHub app, so deploys are triggered through the API. Real sign-in by Aaryan lists 2 Sandbox (Paper) + 2 Wealthsimple (Real) accounts, all not allowed. Spike: authorizations, accounts, positions, balances, quotes OK with the OAuth token; symbol search 501 on the Sandbox → fallback to a quote by ticker (`fix(snaptrade): find securities by ticker when the broker has no symbol search`), verified live with AAPL/MSFT/SPY. Also fixed a test time-bomb (`fix(mcp): pin the test date …`): the MCP SDK checks token expiry against the real clock. See D27, F13.
 
 ### PHASE 6 — Token Lifecycle (M3) [in progress — human checks pending]
 
@@ -119,7 +119,7 @@ Last Updated: 2026-10-04
 ### PHASE 9 — Our OAuth Authorization Server for MCP Clients (M6, part 1) [in progress — human checks pending]
 
 - [x] All OAuth server tests pass
-- [ ] `curl https://<host>/.well-known/oauth-authorization-server` shows `client_id_metadata_document_supported: true` and `token_endpoint_auth_methods_supported: ["none"]`
+- [x] `curl https://<host>/.well-known/oauth-authorization-server` shows `client_id_metadata_document_supported: true` and `token_endpoint_auth_methods_supported: ["none"]`
 - [x] Token endpoint responds in < 200ms locally (no outbound calls)
 - [x] Commits: `feat(oauth-server): publish protected resource and as metadata` · `feat(oauth-server): validate cimd clients and redirect uris` · `feat(oauth-server): add consent and code issuance` · `feat(oauth-server): issue rotating opaque tokens with pkce` · `feat(web): list and revoke connected ai apps` · `test(oauth-server): cover pkce cimd rotation and reuse`
 - Notes: Built 2026-10-04 and merged to main (CI run 37192218744 green). 624 tests (42 OAuth integration + unit tests for the rate limiter and redirect matching). The metadata test asserts both fields locally; the curl against the deployed host waits for P5 (Aaryan). Token endpoint: 7–10 ms locally over 10 exchanges; a test asserts no outbound fetch. CSP moved to web/csp.ts so the consent page can allow the client's redirect origin in form-action. Extra commit: `docs: record phase 9 oauth server decisions`. See D20.
@@ -128,7 +128,7 @@ Last Updated: 2026-10-04
 
 - [x] MCP integration tests pass
 - [ ] MCP Inspector (`npx @modelcontextprotocol/inspector`) connects to the deployed URL via OAuth and lists 8 tools
-- [ ] **Claude web:** add the custom connector → consent → "list my accounts" works
+- [x] **Claude web:** add the custom connector → consent → "list my accounts" works (2026-10-09, real Sandbox; a 5 × AAPL proposal was rejected with both limit reasons)
 - [ ] **Claude web:** "buy 1 share of <sandbox symbol> in <account>" → pending + link → approve in browser → ask Claude for status → `FILLED`
 - [ ] **Claude Code:** same connect + list flow via loopback redirect
 - [ ] Revoking the app on the dashboard → Claude's next call fails and asks to reconnect
