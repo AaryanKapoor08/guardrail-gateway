@@ -1,5 +1,7 @@
 import { CsrfField } from '../auth/csrf.js';
 import type { SignedIn } from '../auth/sessions.js';
+import { type ClaimResult, hasDifferingClaim } from '../claims/check-claims.js';
+import type { AiReasoning } from '../intents/propose-input.js';
 import type { IntentView } from '../intents/view.js';
 import { fmtToronto } from '../lib/time.js';
 import {
@@ -14,7 +16,12 @@ import {
 import { Layout } from '../web/layout.js';
 
 // The approval page, following SnapTrade's Order Impact and Confirmation guide (V§9.2). It shows
-// our stored, resolved data (never text the AI wrote) so the human checks the real order.
+// our stored, resolved data so the human checks the real order. The only text the AI wrote is in
+// the claim card (D30), shown as plain text and labelled as the AI's own words.
+
+export const CLAIM_CARD_TITLE = 'What the AI believes vs what your broker says';
+export const CLAIMS_DIFFER_BANNER =
+  "The AI's reasoning doesn't match your broker's data. Check before approving.";
 
 const ESTIMATE_LABEL =
   'Impact source: Application-generated estimate — This application calculated these amounts using the latest available quote and fee assumptions. They were not supplied or verified by SnapTrade or the brokerage.';
@@ -112,6 +119,91 @@ function PolicyChecks(props: { intent: IntentView }) {
   );
 }
 
+// Differences first, so the human can't miss them; confirmed claims last.
+const CLAIM_ORDER: Record<ClaimResult['status'], number> = {
+  differs: 0,
+  missing: 1,
+  cannot_check: 1,
+  matches: 2,
+};
+
+const CLAIM_CLASS: Record<ClaimResult['status'], string> = {
+  differs: 'fail',
+  missing: 'unsure',
+  cannot_check: 'unsure',
+  matches: 'pass',
+};
+
+const CLAIM_LABEL: Record<ClaimResult['status'], string> = {
+  differs: "Doesn't match: ",
+  missing: 'Not checked: ',
+  cannot_check: 'Not checked: ',
+  matches: 'Matches: ',
+};
+
+// Hostnames only ("example.com"), as plain text: never a link the human might click.
+function sourceHostnames(sources: readonly string[]): string {
+  const hostnames = sources.map((source) => URL.parse(source)?.hostname ?? '');
+  return [...new Set(hostnames.filter((hostname) => hostname !== ''))].join(', ');
+}
+
+function AiWords(props: { reasoning: AiReasoning | null }) {
+  const reasoning = props.reasoning;
+  if (reasoning === null) {
+    return null;
+  }
+  const hostnames = sourceHostnames(reasoning.sources ?? []);
+  return (
+    <>
+      {reasoning.user_request === undefined ? null : (
+        <p>
+          <strong>In your words:</strong> {reasoning.user_request}
+        </p>
+      )}
+      {reasoning.why === undefined ? null : (
+        <p>
+          <strong>The AI's reason:</strong> {reasoning.why}
+        </p>
+      )}
+      {hostnames === '' ? null : (
+        <p>
+          <strong>Sources the AI used:</strong> {hostnames}
+        </p>
+      )}
+    </>
+  );
+}
+
+function ClaimCheck(props: { intent: IntentView; claimResults: readonly ClaimResult[] }) {
+  const sorted = [...props.claimResults].sort(
+    (first, second) => CLAIM_ORDER[first.status] - CLAIM_ORDER[second.status],
+  );
+  return (
+    <section class="box">
+      <h2>{CLAIM_CARD_TITLE}</h2>
+      {sorted.length === 0 ? (
+        <p class="notice">
+          The AI didn't say what price or company it expected, so there was nothing to check.
+        </p>
+      ) : (
+        <ul class="checks">
+          {sorted.map((result) => (
+            <li class={CLAIM_CLASS[result.status]}>
+              <span class="sr-only">{CLAIM_LABEL[result.status]}</span>
+              {result.message}
+            </li>
+          ))}
+        </ul>
+      )}
+      <AiWords reasoning={props.intent.aiReasoning} />
+      <p class="notice">
+        The AI wrote these claims. The gateway checked its price and company against your broker's
+        data. They don't change the policy checks.
+      </p>
+    </section>
+  );
+}
+
 function Decision(props: { intent: IntentView; csrfToken: string }) {
   const { intent } = props;
   return (
@@ -197,6 +289,9 @@ export function ApprovalPage(props: ApprovalPageProps) {
           Review order <ModeBadge mode={intent.mode} />
         </h1>
       </div>
+      {intent.claimResults !== null && hasDifferingClaim(intent.claimResults) ? (
+        <div class="banner danger">{CLAIMS_DIFFER_BANNER}</div>
+      ) : null}
       {props.notice === undefined ? null : <div class="banner danger">{props.notice}</div>}
       <div class="banner">
         This order was proposed by an AI assistant. Check every detail. Approving is your decision.
@@ -205,6 +300,9 @@ export function ApprovalPage(props: ApprovalPageProps) {
         <div class="banner">You have another pending order with identical details.</div>
       ) : null}
       <OrderSummary intent={intent} />
+      {intent.claimResults === null ? null : (
+        <ClaimCheck intent={intent} claimResults={intent.claimResults} />
+      )}
       <div class="split">
         <section class="box">
           <h2>Order details</h2>

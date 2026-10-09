@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { CLAIM_CARD_TITLE, CLAIMS_DIFFER_BANNER } from '../../src/approvals/approval-page.js';
 import type { DatabaseConnection } from '../../src/db/client.js';
 import { orderIntents, paperCash } from '../../src/db/schema.js';
 import { approveIntent } from '../../src/intents/decisions.js';
@@ -56,6 +57,11 @@ async function proposePending(
   return intent.id;
 }
 
+// Hono JSX escapes quotes in text, so expected page text is compared in its escaped form.
+function escapeHtml(text: string): string {
+  return text.replaceAll("'", '&#39;').replaceAll('"', '&quot;');
+}
+
 function approve(intentId: string) {
   return approveIntent(testApp.deps, { userId: user.userId, intentId });
 }
@@ -93,6 +99,64 @@ describe('approval page', () => {
       expect(html).toContain(text);
     }
     expect(html).not.toContain('Q6542138443');
+  });
+
+  it("shows the AI's claims against the broker's data, differences first, with a warning banner", async () => {
+    const intent = expectIntent(
+      await proposeTestOrder(testApp, user.userId, {
+        account_ref: accountRef,
+        reasoning: {
+          why: 'A cheap all-in-one fund.',
+          expected_price: '50',
+          company_name: 'iShares Core Equity',
+          user_request: 'buy one XEQT',
+          sources: ['https://www.blackrock.com/ca/xeqt?x=1', 'https://www.blackrock.com/other'],
+        },
+      }),
+    );
+
+    const html = await (await getPage(testApp, `/approvals/${intent.id}`, user.cookie)).text();
+
+    for (const text of [
+      CLAIMS_DIFFER_BANNER,
+      CLAIM_CARD_TITLE,
+      "Doesn't match: ",
+      "The AI expected about $50.00 CAD a share, but your broker's latest price is $32.10 CAD (36% lower).",
+      'Matches: ',
+      '<strong>In your words:</strong> buy one XEQT',
+      "<strong>The AI's reason:</strong> A cheap all-in-one fund.",
+      '<strong>Sources the AI used:</strong> www.blackrock.com</p>',
+    ]) {
+      expect(html).toContain(escapeHtml(text));
+    }
+    expect(html.indexOf(escapeHtml(CLAIMS_DIFFER_BANNER))).toBeLessThan(
+      html.indexOf('Policy checks'),
+    );
+    expect(html.indexOf(escapeHtml("Doesn't match: "))).toBeLessThan(html.indexOf('Matches: '));
+    expect(html).not.toContain('href="https://www.blackrock.com');
+  });
+
+  it('says the AI gave no reasons, without the warning banner, when it sent none', async () => {
+    const intentId = await proposePending();
+
+    const html = await (await getPage(testApp, `/approvals/${intentId}`, user.cookie)).text();
+
+    expect(html).toContain('The AI gave no reasons for this order.');
+    expect(html).not.toContain(escapeHtml(CLAIMS_DIFFER_BANNER));
+  });
+
+  it('escapes text the AI wrote', async () => {
+    const intent = expectIntent(
+      await proposeTestOrder(testApp, user.userId, {
+        account_ref: accountRef,
+        reasoning: { why: '<script>alert(1)</script>' },
+      }),
+    );
+
+    const html = await (await getPage(testApp, `/approvals/${intent.id}`, user.cookie)).text();
+
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
   });
 
   it('warns when another pending order has identical details', async () => {

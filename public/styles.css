@@ -767,6 +767,13 @@ h1 .badge {
   color: var(--fg-soft);
 }
 
+/* A claim the gateway couldn't check (claim check, D30). */
+.checks li.unsure::before {
+  content: "?";
+  background: rgba(255, 179, 64, 0.16);
+  color: var(--amber);
+}
+
 .checklist {
   padding-left: 0;
   list-style: none;
