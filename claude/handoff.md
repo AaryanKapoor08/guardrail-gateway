@@ -1,56 +1,82 @@
-# Handoff — overnight autonomous build
+# Handoff — record the demo video and submit
 
-**Mode (authorised by Aaryan, 2026-10-04):** fully autonomous. Do not ask questions, do not stop. Decide sensibly, document non-obvious choices in `DECISIONS.md`, and keep going. Build past the P5 API-check gate using SnapTrade's **documented** shapes (verify tomorrow).
+Written 2026-10-09 (early morning). Everything below is done and live unless it says **TODO**.
 
-**Controller pattern:** the controller (main Claude session) writes NO app code. It spawns ONE Opus subagent at a time per phase batch, then verifies (`npm run check`, `npm test`, CI status, diff sanity), updates this file, and spawns the next batch.
+## ⚠ Deadline
 
-## Batch plan (in order)
-| # | Batch | Status |
-|---|---|---|
-| 1 | P1 Scaffold + P2 Schema/foundations | **done** (82 tests, CI green) |
-| 2 | P3 Sign-in + P4 Accounts sync/dashboard | **done** (167 tests, CI green) |
-| 3 | P6 Token lifecycle + P7 Policy engine/state machine | **done** (503 tests, CI green) |
-| 4 | P8 Intents, approvals, paper executor | **done** (563 tests, CI green) |
-| 5 | P9 OAuth authorization server for MCP | **done** (624 tests, CI green) |
-| 6 | P10 MCP server + tools | **done** (647 tests, CI green) |
-| 7 | P11 Dashboard polish | **done** (686 tests, CI green) |
-| 8 | P12 Webhooks | **done** (710 tests, CI green) |
-| 9 | P14 2-minute instant demo | **done** (726 tests, CI green) |
-| 10 | P15 Submission docs (README, THREAT_MODEL, demo script; no video) | **done** (docs; CI green) |
+SnapTrade's page says **"Submissions close Friday, October 9"**, which is **today (2026-10-09)**. Record and submit **before midnight tonight**. If you wait until Saturday Oct 10, the form may already be closed.
 
-**Skipped tonight:** P5 (deploy + real API spike: needs Aaryan + Render), P13 (live trading: SnapTrade hasn't enabled `trade`).
+## Where things are
 
-## Human tasks for tomorrow (append as batches finish)
-- P15: record the demo video from `docs/demo-script.md`; run the V§19.2 checklist on production with a second test user; check ≥ 99% uptime over 7 days and only one free Render service; free up test-app user slots for reviewers; then tag `v1.0.0`.
-- P8: run `npx tsx scripts/demo-flow.ts`-style propose against the dev DB, approve in the browser, see the paper position; tick the V§9.2 approval-page checklist.
-- P3: real sign-in at http://localhost:3000 with the SnapTrade Personal test user; click Deny once.
-- P5: create a Render account, then deploy (controller does it via the API with `RENDER_API_KEY`); UptimeRobot monitor; real API capability spike; apply any shape fixes.
-- P9: after deploy, `curl https://<host>/.well-known/oauth-authorization-server` and check `client_id_metadata_document_supported: true` + `token_endpoint_auth_methods_supported: ["none"]`; check which X-Forwarded-For entry Render puts the visitor IP in (D20).
-- P10 (⛔ Q5 gate, after deploy): add the connector in Claude web + Claude Code; approve one order; check `oauth.client_seen` logs for the real client_id URLs; MCP Inspector lists 8 tools; revoking the app on /apps makes Claude's next call fail.
-- P11: in the browser, try each setting (policy limit, deny/allow list, kill switch, mode button, audit log, delete a throwaway account) plus one proposal.
-- P12: set the webhook URL `https://<host>/webhooks/snaptrade` in the SnapTrade dashboard; set `WEBHOOK_LOG_BODIES=true` on Render, trigger one Sandbox webhook, save `{ body, signature }` to `tests/fixtures/webhook-real.json`, set the flag back to false, run `REAL_SNAPTRADE_CONSUMER_KEY=... npx vitest run tests/unit/webhook-real-fixture.test.ts` (D23).
-- P14: 2-minute stopwatch test by a fresh person on the deployed URL; connect Claude to a demo account (connector sign-in page → Try the demo) and propose an order.
+| What | Where |
+|---|---|
+| Live app | https://guardrail-gateway-xbqm.onrender.com |
+| Claude connector URL | https://guardrail-gateway-xbqm.onrender.com/mcp |
+| Code | https://github.com/AaryanKapoor08/guardrail-gateway (tag `v1.0.0`, CI green) |
+| Video script (90 s) | `docs/demo-script.md` |
+| Render service | `srv-db47svbncjis73c46lt0` (free, Virginia), dashboard.render.com |
+| SnapTrade OAuth app | `PROJECT-TEST-MTDRW`; redirect URI for the live site already added |
 
-## Environment facts for subagents
-- Repo: `C:\dev\snaptrade` (GitHub: AaryanKapoor08/guardrail-gateway, public). Git author: `Aaryan Kapoor <aaryankapoor008@gmail.com>`.
-- Node 24.19.0 at `C:\Program Files\nodejs`. In bash, prefix: `export PATH="/c/Program Files/nodejs:$PATH"`.
-- Docker Desktop running. Test DB: `docker compose up -d db-test` (postgres:17 on 5433). **Never prune; only remove containers by exact name** (other projects share this machine).
-- `.env` is complete for dev (never print or commit it). Neon `DATABASE_URL` uses `sslmode=verify-full`.
+## State of your account on the live site (already set up)
 
-## Log
-- 2026-10-04: handoff created; starting batch 1.
-- 2026-10-04: batch 1 done (P1+P2: 82 tests pass, CI green on main, decisions D13-D14). Note for P4: accounts name/raw_type/number_last4 are NOT NULL but SnapTrade may return null. Batch 2 started.
-- 2026-10-04: launching the batch 2 subagent was DENIED by the Claude Code auto-mode classifier ("Auto-Mode Bypass"). Per the denial rules the controller stopped, did not work around it, and cancelled the hourly watchdog. Batch 2 is waiting for Aaryan to approve or relaunch.
-- 2026-10-04: Aaryan (awake) asked directly to continue; one Opus agent launched to build P3, P4, P6–P12, P14, P15 in order, updating Progress.md + this log after each phase.
-- 2026-10-04: P3 done: 142 tests, CI green, decisions D15.
-- 2026-10-04: P4 done: 167 tests, CI green, decisions D16.
-- 2026-10-04: P6 done: 178 tests, CI green, decisions D17.
-- 2026-10-04: P7 done: 503 tests, CI green, decisions D18.
-- 2026-10-04: P8 done: 563 tests, CI green, decisions D19.
-- 2026-10-04: P9 done: 624 tests, CI green, decisions D20.
-- 2026-10-04: P10 done: 647 tests, CI green, decisions D21.
-- 2026-10-04: P11 done: 686 tests, CI green, decisions D22.
-- 2026-10-04: P12 done: 710 tests (+1 skipped real-fixture), CI green, decisions D23.
-- 2026-10-04: P14 done: 726 tests (+1 skipped), CI green, decisions D24.
-- 2026-10-04: P15 done: docs complete, 726 tests (+1 skipped), CI green on main, decisions D25-D26. All buildable phases finished; the rest is the human task list above.
-- 2026-10-04: BUILD COMPLETE (all buildable phases). Controller verified locally: npm run check clean, 726 tests passed + 1 skipped (real-webhook fixture, needs a human capture); CI green on main. Remaining: human tasks above + P5 deploy/API check; P13 only if SnapTrade enables trade.
+- Signed in with SnapTrade as aaryan.kapoor@unb.ca.
+- **Allowed:** sandbox → Individual (••••-001). Not allowed: sandbox IRA and both Wealthsimple accounts (keep it that way).
+- **Policy:** currency **USD**, per-order **$250**, daily **$600** (needed because the Sandbox trades in USD).
+- Claude (claude.ai) has the **Guardrail Gateway** connector added and working.
+- 1 × AAPL was already approved and filled at $180.50 (paper) on Oct 9 as a test. It counts toward Oct 9's daily total ($600 limit, Toronto calendar day), so on Oct 9: 5 × AAPL is still rejected, and 1 × AAPL still passes ($361 total).
+- Sandbox prices are fixed: AAPL $180.50, MSFT $410, SPY $558.25. Canadian tickers (VFV.TO) don't exist on the Sandbox; the instant demo uses them instead.
+
+## Before you hit record (10 minutes)
+
+1. Open https://guardrail-gateway-xbqm.onrender.com and wait until it loads (the free server sleeps after 15 idle minutes; the first load takes ~30 s). Click around once so it's warm.
+2. Check you're signed in (top bar shows "Paper mode · Dashboard · …"). If not: Sign in → Sign in with SnapTrade.
+3. Kill switch must be **off** (no red bar under the navbar).
+4. Policy page shows USD / 250 / 600.
+5. Open claude.ai in a second tab, **new chat**, make sure the Guardrail Gateway connector is enabled for the chat.
+6. Browser zoom 110–125 %, close other tabs, hide bookmarks bar. Never show `.env`, tokens, or the Wealthsimple account numbers up close.
+
+## Recording (follow `docs/demo-script.md`, 60–90 s)
+
+1. **0:00–0:10** Home page (scroll the bento a little). Problem in one sentence.
+2. **0:10–0:20** Dashboard (accounts, only Individual allowed) → Policy page.
+3. **0:20–0:35** Claude: *"Buy 5 shares of AAPL in my Individual account"* → rejected with both reasons.
+4. **0:35–1:00** *"OK, buy 1 share instead"* → open the link → approval page (summary, checks, PAPER badge) → **Approve** → "Filled".
+5. **1:00–1:10** Claude: *"What's the status of that order?"* → FILLED.
+6. **1:10–1:22** Dashboard → **Turn the kill switch on** (red bar) → **Audit log**.
+7. **1:22–1:30** Home page → "Try the demo". 
+8. **Afterwards: turn the kill switch off.**
+
+Tip: do one dry run first. If Claude words things differently, that's fine; keep talking over it.
+
+## Submit
+
+1. Upload to YouTube as **Unlisted**. Open the link in a private window to check it plays without signing in.
+2. Submission form (on SnapTrade's "Build something" page):
+   - Project: Guardrail Gateway
+   - Live: https://guardrail-gateway-xbqm.onrender.com
+   - Code: https://github.com/AaryanKapoor08/guardrail-gateway
+   - Video: your YouTube link
+   - One line: *"A safety layer that lets AI assistants like Claude propose trades on SnapTrade-connected accounts, but only within limits you set and only after you approve, with a kill switch and a full audit log."*
+3. Check you meet the eligibility rule in their terms (Hack Atlantic 2026 participants/attendees).
+
+## TODO (nice to have, not blocking)
+
+- **UptimeRobot** (free): New Monitor → HTTP(s) → `https://guardrail-gateway-xbqm.onrender.com/health` → every 5 min. Keeps the site awake while SnapTrade reviews it.
+- Real webhook capture (P12), Claude Code connection (untested), live trading (P13, deliberately not built: no paper-trading brokerage). All documented in README "Known limits".
+
+## If something breaks
+
+- **Site shows an error / won't load:** wait 60 s (cold start) and reload. Still broken → Render dashboard → the service → Logs.
+- **Redeploy after a code change:** pushing to `main` does **not** auto-deploy (no Render GitHub app). In Render: service → **Manual Deploy → Deploy latest commit**. (Or ask Claude Code; it has a script that calls the Render API with `RENDER_API_KEY` from `.env`.)
+- **Claude says the connector needs to reconnect:** claude.ai → Settings → Connectors → Guardrail Gateway → reconnect → Allow.
+- **"AAPL trades in USD, but your limits are in CAD":** Policy page → Currency USD → Save (needs no pending orders).
+- **Order rejected for the daily limit:** you used up today's $600. Raise the daily limit on the Policy page, or use 1 × AAPL only.
+- **Local dev:** `npm run dev` (uses `.env`, same Neon DB as production), tests: `npm run db:test:up && npm test`.
+
+## What changed in this session (2026-10-09)
+
+- Fixed 23 MCP tests broken by the real date passing the fixed test date (SDK checks expiry against the real clock).
+- Deployed to Render (P5); real SnapTrade sign-in works; capability spike done (D27, F13).
+- Sandbox symbol search returns 501 → the app now finds tickers through a quote (`use_ticker=true`); verified live.
+- Real Claude flow verified end to end (reject → propose → approve → FILLED).
+- Full visual redesign after ShoreCheck (D28): dark glass theme, pill navbar, bento home page, two-column approval page, self-hosted Inter. 727 tests pass.

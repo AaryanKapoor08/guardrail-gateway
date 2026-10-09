@@ -213,3 +213,9 @@ Every §0 item and where it is decided or built, so none is left implicit:
 - **Q9:** not answerable on the Sandbox, which is a US brokerage (`VFV.TO` is unknown there). Matching on both `symbol` and `raw_symbol` stays as is.
 - **Q11:** `positions/all` returns `units` and `price` as decimal strings, plus `instrument.kind` (`stock`) and `data_freshness.as_of`. Kept as the labelled fallback only.
 - **Alternatives:** held-symbols-only (V§21; blocks buying anything new on the Sandbox); global `/referenceData` symbol search (not account-scoped, so it can't tell what this broker supports).
+
+### D28 — Visual redesign without React (2026-10-09)
+- **What:** every page restyled after Aaryan's ShoreCheck app (Apple-style dark theme: black background, `#f5f5f7` text, `#1d1d1f` cards, `#86868b` muted text, 10% white borders, a floating glass pill navbar, Aceternity-style spotlight, bento cards, pill buttons, status dots). New landing page (hero, "how it works" bento, "what the AI can't do", call to action) and a two-column approval page (summary, details, decision, checks).
+- **How:** one hand-written `public/styles.css` plus class changes in the existing Hono JSX. Inter is self-hosted (`public/fonts/inter-latin.woff2`, SIL Open Font License) so the look is the same on every system. Entrance and spotlight effects are CSS animations and respect `prefers-reduced-motion`.
+- **Why not React/shadcn/Aceternity as in ShoreCheck:** the CSP forbids scripts (and inline styles), the rules forbid client-side JavaScript and new dependencies, and porting the app to React the day of submission would put the tested server-rendered flow at risk. The same visual language is reproducible in CSS.
+- **Alternatives:** Tailwind via CDN (needs scripts or a build step, blocked by the CSP); a React front end (large rewrite, new dependencies).

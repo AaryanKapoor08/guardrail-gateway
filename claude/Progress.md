@@ -4,7 +4,7 @@ Update this file as you complete each phase (use /progress-save).
 
 **Current Phase: all buildable phases done in code (P1–P4, P6–P12, P14, P15); waiting on Aaryan for P5 (deploy + real API check), the human checks, and P13 (if SnapTrade enables `trade`)** (P5 deferred to Aaryan)
 
-Last Updated: 2026-10-04
+Last Updated: 2026-10-09
 
 ---
 
@@ -25,6 +25,7 @@ Last Updated: 2026-10-04
 - 2026-10-04 (single-agent build): PHASE 12 complete in code and merged to main (CI green). Python-compatible canonical JSON, signature check, idempotent storage with stale flag, background processing as re-sync hints (no locks during network calls), sweeper retries and 30-day purge, new-account notice. 710 tests (+1 skipped real-fixture test). Decision D23. Human checks pending: webhook URL in the SnapTrade dashboard, capture and verify one real webhook. Next: PHASE 14 (P13 skipped).
 - 2026-10-04 (single-agent build): PHASE 14 complete in code and merged to main (CI green). Instant demo: built-in demo brokerage behind snaptradeFetch (same Zod parsing, no network), POST /demo/start with per-IP and global limits, sign-in choice page for Claude's connector, guided /try page, "Try it without an AI" form, demo banner, 24h cleanup through the account-deletion path. 726 tests. Decision D24. Human checks pending: stopwatch test and Claude on a demo account (after deploy). Next: PHASE 15 (docs).
 - 2026-10-04 (single-agent build): PHASE 15 docs complete and merged to main (CI green): README, THREAT_MODEL.md, docs/demo-script.md, DECISIONS D25–D26, API_FEEDBACK F9–F12. 726 tests (+1 skipped real-webhook fixture test). Remaining work is human: P5 deploy and API check, every manual checkpoint, the demo video, the v1.0.0 tag; P13 only if SnapTrade enables trade.
+- 2026-10-09: P5 deployed to Render (https://guardrail-gateway-xbqm.onrender.com); real SnapTrade sign-in and capability spike done (Sandbox symbol search 501 → quote-by-ticker fallback, D27); real Claude flow verified end to end; MCP test date fix; full visual redesign after ShoreCheck (D28); tagged v1.0.0. 727 tests. Remaining: demo video + submission (deadline Oct 9), UptimeRobot. See claude/handoff.md.
 
 ---
 
