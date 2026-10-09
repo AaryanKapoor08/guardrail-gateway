@@ -1,19 +1,25 @@
-# Demo video script (about 90 seconds)
+# Demo video script (about 1:45)
 
-**Problem and answer (20 s) → the site (30 s) → Claude, both prompts live (40 s) → close (5 s).**
+**Problem and solution (25 s) → the site (30 s) → Claude, both prompts live (45 s) → close (5 s).**
 The setup checklist is at the end.
 
 ---
 
-## 1 · Home page · 0:00–0:20
+## 1 · Home page · 0:00–0:25
 
 *Scroll slowly through the four cards while you talk.*
 
-> "AI assistants can now trade in real investment accounts through SnapTrade, but if you tell an AI to never spend more than 500 dollars, nothing actually stops it from getting that wrong. Guardrail Gateway fixes that, because the AI can only ask to make a trade, my own rules check every request, and nothing gets bought until I say yes."
+**The problem (one line):**
+> "AI agents can now trade real brokerage accounts through SnapTrade, and nothing stops a confident AI from being confidently wrong with your money."
+
+**The solution (three lines):**
+> "Guardrail Gateway connects to Claude over MCP with OAuth, so the AI can only propose a trade, it can never place one or approve one.
+> Every proposal runs through sixteen rules on our server, priced with SnapTrade's live quote, and our Claim Check fact-checks the AI's own reasoning, the price it expects and the company it thinks it's buying, against what the broker actually says.
+> Nothing executes until I approve it on our site, every rule runs again at that moment, and every step is written to an audit log nobody can edit."
 
 ---
 
-## 2 · The site · 0:20–0:50
+## 2 · The site · 0:25–0:55
 
 *Click each page in the top bar, then say its line.*
 
@@ -34,7 +40,7 @@ The setup checklist is at the end.
 
 ---
 
-## 3 · Claude · 0:50–1:30
+## 3 · Claude · 0:55–1:40
 
 **Step 1: switch to claude.ai and paste Prompt 1 into the box (don't send yet):**
 
@@ -43,7 +49,7 @@ Send an order through Guardrail Gateway to buy 5 shares of AAPL in my Individual
 ```
 
 **While pasting, say:**
-> "I'm going to give Claude two requests, first a trade that's too big for my rules, and then a research request where it has to stay inside them."
+> "I'm going to give Claude two requests, first a trade that's too big for my rules, and then a research request where Claude has to show its reasoning."
 
 **Step 2: press Enter. When Claude says it was rejected, say:**
 > "Claude tried, but five shares is way over my 500 dollar limit, so my site blocked it and told Claude exactly which rule it broke."
@@ -56,15 +62,18 @@ Research how Apple's stock is doing this week and look at my Individual account,
 
 *Say nothing while Claude works; this part gets sped up in editing.*
 
-**Step 4: when Claude says the order is waiting for you, say:**
-> "This time Claude looked up Apple, checked my account, and asked for one share, which passes every rule, but it still can't buy anything until I say yes."
+**Step 4: when Claude says the order is waiting for you (it should also mention the price difference), say:**
+> "Claude researched Apple and asked for one share, and our Claim Check already caught something, Claude thinks Apple costs around 330 dollars, but my broker's actual price is 180."
 
-**Step 5: click the link Claude gives you, then click Approve, and say:**
-> "When I approve, my site checks every rule again with the latest price, and it buys in practice mode, so no real money is spent."
+**Step 5: click the link Claude gives you. On the approval page, point at the red banner and the "What the AI believes vs what your broker says" card, and say:**
+> "Instead of making me read sixteen green ticks, the page puts the one thing that's wrong right at the top, so I'm checking the AI's reasoning, not just rubber-stamping it."
+
+**Step 6: click Approve, and say:**
+> "The broker's price is what I'd actually pay and it fits my rules, so I approve, every rule runs again with the latest price, and it fills in practice mode, so no real money is spent."
 
 ---
 
-## 4 · Close · 1:30–1:35
+## 4 · Close · 1:40–1:45
 
 *Click Guardrail Gateway (top left) to go back to the home page.*
 
@@ -78,11 +87,14 @@ Research how Apple's stock is doing this week and look at my Individual account,
 2. **Dashboard:** the tiles say Paper, Kill switch Off, and Waiting for you 0.
 3. **Policy:** Per-order limit **500**, Daily limit **1000**, Currency USD, and **Orders per day** 20 so practice runs don't use up the day (the Sandbox prices AAPL at about $180.50, so 1 share passes and 5 shares, about $902, are blocked). If anything is different, fix it and click Save policy.
 4. **Orders:** deny anything that is still waiting.
-5. **claude.ai:** go to Settings → Connectors → Guardrail Gateway and set the tools to **Always allow**, then open a new chat with Guardrail Gateway switched on.
-6. Go back to our home page, zoom to 110–125 %, close other tabs, and record with Loom.
+5. **claude.ai, refresh the connector (needed once after the Claim Check update):** Settings → Connectors → Guardrail Gateway → **Disconnect**, then **Connect** and click **Allow** on our page. This makes Claude load the new version of our tools.
+6. **claude.ai:** in the same Connectors screen, set the Guardrail Gateway tools to **Always allow**, then open a new chat with Guardrail Gateway switched on.
+7. Go back to our home page, zoom to 110–125 %, close other tabs, and record with Loom.
 
 Never show the `.env` file, tokens, or real (non-Sandbox) account numbers.
 
 **If Claude refuses to send an order itself** (it says "I didn't place this order" without using Guardrail Gateway): reply "Send it anyway, let Guardrail Gateway decide" and cut the first answer out.
+**If there's no red banner on the approval page** (Claude didn't give its expected price): skip the Step 4 and Step 5 lines about the difference and just say the Step 6 line.
+**If Claude shows an error about the tool's output:** the connector is still on the old version; redo setup step 5.
 **If the order hits the daily limit:** on Policy, set the Daily limit to 2000 and save.
 **After recording:** check the kill switch is off.
