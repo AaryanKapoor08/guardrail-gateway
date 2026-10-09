@@ -76,7 +76,7 @@ Research how Apple's stock is doing this week and look at my Individual account,
 
 1. Open https://guardrail-gateway-xbqm.onrender.com and wait until it loads (up to 30 seconds while the free server wakes up).
 2. **Dashboard:** the tiles say Paper, Kill switch Off, and Waiting for you 0.
-3. **Policy:** Per-order limit **500**, Daily limit **1000**, Currency USD (AAPL is about $330 a share now, so 1 share has to fit under the per-order limit). If anything is different, fix it and click Save policy.
+3. **Policy:** Per-order limit **500**, Daily limit **1000**, Currency USD and set **Max orders per day** to 20 so practice runs don't use up the day (the Sandbox prices AAPL at about $180.50, so 1 share passes and 5 shares, about $902, are blocked). If anything is different, fix it and click Save policy.
 4. **Orders:** deny anything that is still waiting.
 5. **claude.ai:** go to Settings → Connectors → Guardrail Gateway and set the tools to **Always allow**, then open a new chat with Guardrail Gateway switched on.
 6. Go back to our home page, zoom to 110–125 %, close other tabs, and record with Loom.
