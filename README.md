@@ -2,7 +2,9 @@
 
 **Let an AI assistant propose trades for you, but only inside rules you set, and only after you click Approve.**
 
-> **Try it in 2 minutes, no sign-up:** open the site and press **"Try the demo"**. You get a 24-hour demo account with clearly labelled fake brokerage data and a guided page: ask for an order that is too big (rejected, with the reasons), ask for one that is allowed, approve it, see it filled, and read the audit log. The public URL is added after the first deploy; until then, run it locally (see [Run it locally](#run-it-locally)) and open http://localhost:3000.
+> **Live:** https://guardrail-gateway-xbqm.onrender.com
+>
+> **Try it in 2 minutes, no sign-up:** open the site and press **"Try the demo"**. You get a 24-hour demo account with clearly labelled fake brokerage data and a guided page: ask for an order that is too big (rejected, with the reasons), ask for one that is allowed, approve it, see it filled, and read the audit log. (The free server sleeps when idle, so the first page can take about 30 seconds.)
 
 Guardrail Gateway is a server-side safety layer between AI assistants (Claude, through the Model Context Protocol, MCP) and the brokerage accounts a person has connected through [SnapTrade](https://snaptrade.com). The AI can read the accounts you allow and **propose** orders. Every proposal is checked by a pure policy engine against your limits, waits for **your explicit approval on this website**, and only then executes, in **paper (simulated) mode** by default. Everything is written to an append-only audit log, and one kill switch stops everything. The AI has no tool that can approve an order, change a limit, or turn the kill switch off.
 
@@ -27,22 +29,22 @@ Not financial advice. Guardrail Gateway never recommends trades.
 ## How it works
 
 1. **Sign in with SnapTrade** (OpenID Connect). We store your SnapTrade tokens encrypted (AES-256-GCM) and copy your accounts. **No account is allowed by default:** you choose which ones the AI may see.
-2. **Connect Claude** to `https://<host>/mcp`. Claude registers with our own small OAuth server, you approve it on a consent screen that names the requesting app and where it sends you back, and Claude gets a token that works only on our MCP endpoint.
+2. **Connect Claude** to `https://guardrail-gateway-xbqm.onrender.com/mcp`. Claude registers with our own small OAuth server, you approve it on a consent screen that names the requesting app and where it sends you back, and Claude gets a token that works only on our MCP endpoint.
 3. **Claude proposes** ("buy 2 VFV.TO in my TFSA"). We resolve the symbol with SnapTrade, fetch a fresh price and your holdings, then, holding a per-user database lock, run all 16 policy rules and record the result:
    - any rule fails → `POLICY_REJECTED`, and Claude gets every reason in plain English;
    - all pass → `PENDING_APPROVAL`, and Claude gets an approval link (also on your dashboard, and optionally emailed).
 4. **You approve** on our site (signed in, a POST with a CSRF token; opening the link alone never does anything). We fetch fresh data and **run the whole policy again**, because things may have changed, then execute.
-5. **Paper mode** fills the order in our own ledger at the fresh price. Live trading is designed and gated but not built, because SnapTrade hasn't enabled the `trade` scope for this app yet.
+5. **Paper mode** fills the order in our own ledger at the fresh price. Live trading is designed and gated but not built: SnapTrade's Sandbox is read-only, and there was no paper-trading brokerage to test real order placement safely, so we don't ship order code that has never placed an order.
 6. **Everything is audited** in the same database transaction as the change it records. The audit table can't be edited or deleted (a database trigger enforces it), except by deleting your whole account.
 
 An order moves through a small state machine: `PROPOSED → PENDING_APPROVAL | POLICY_REJECTED`, then `APPROVED → EXECUTING → FILLED | CLOSED` (or `DENIED`, `EXPIRED`, `CANCELLED`). Every transition goes through one pure function, `transition(state, event)`, tested for all 221 state/event pairs.
 
 ## Connect Claude
 
-The connector URL is `https://<host>/mcp` (shown on your dashboard).
+The connector URL is `https://guardrail-gateway-xbqm.onrender.com/mcp` (shown on your dashboard).
 
 - **Claude (web or desktop):** Settings → Connectors → Add custom connector → paste the URL → sign in (SnapTrade, or "Try the demo") → Allow.
-- **Claude Code:** `claude mcp add --transport http guardrail https://<host>/mcp`, then sign in and Allow in the browser window it opens.
+- **Claude Code:** `claude mcp add --transport http guardrail https://guardrail-gateway-xbqm.onrender.com/mcp`, then sign in and Allow in the browser window it opens.
 
 The 8 tools, always in this order: `list_accounts`, `get_positions`, `get_balances`, `get_policy`, `propose_order`, `get_order_status`, `list_recent_intents`, `cancel_order_intent`. There is deliberately no tool to approve, deny, change the policy, allow accounts, use the kill switch, switch mode, or disconnect. Every tool description ends with: *"Orders always require the human to approve them on the Guardrail Gateway website."*
 
@@ -128,7 +130,8 @@ Our server is small and hand-written: authorization code + PKCE (S256), Client I
 
 ## Known limits
 
-- **Paper only.** The live executor (placing real orders through SnapTrade) is designed (state machine, gates, reconciliation) but not built: SnapTrade hasn't enabled the `trade` scope for this app.
+- **Paper only.** The live executor (placing real orders through SnapTrade) is designed (state machine, gates, reconciliation) but not built: SnapTrade's Sandbox is read-only and no paper-trading brokerage was available to test real order placement safely.
+- **Sandbox symbol search.** The Sandbox brokerage answers 501 to symbol search, so the app looks tickers up through a quote instead (D27). The Sandbox is a US brokerage: use US tickers such as AAPL or SPY there; the demo uses Canadian ones.
 - **Single instance.** Caches and rate limits are in memory. Scaling out would move them to Postgres or Redis.
 - **No FX.** Orders in a currency other than your policy currency are refused.
 - **No cancelling at the broker.** The kill switch stops everything not yet sent; orders already at a broker must be cancelled there (shown in the UI).

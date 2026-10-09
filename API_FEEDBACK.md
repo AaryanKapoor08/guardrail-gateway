@@ -68,13 +68,23 @@ These come from building against the documented shapes. They are confirmed or co
 - **Observed:** apps like ours act as both an OAuth client of SnapTrade and an OAuth server for AI clients (MCP). The docs cover the first role well; how webhooks, refresh rotation, and revocation interact with a second token layer is left to the developer.
 - **Suggestion:** a short "building an AI agent gateway on SnapTrade" guide (keep SnapTrade tokens server-side; issue your own tokens to the AI; revoke both on disconnect).
 
-## Still to confirm with real responses (at deploy, P5 / P12)
+### F13 — Account-scoped symbol search returns 501 on the Sandbox brokerage
+- **Observed (2026-10-09, real OAuth token):** `POST /accounts/{id}/symbols` answers 501 for the Sandbox "Individual" account, while `GET /accounts/{id}/quotes?use_ticker=true` works and returns the full universal-symbol object.
+- **Impact:** an app built and tested on the Sandbox can't exercise its symbol-resolution path; ours now falls back to a quote by ticker (D27).
+- **Suggestion:** support symbol search on the Sandbox, or list per-brokerage endpoint support (which calls return 501) in the docs.
+
+## Confirmed with real responses (P5 spike, 2026-10-09)
+
+| Question (PRODUCT_VISION §21) | Answer | Where |
+|---|---|---|
+| Q3 — can OAuth tokens call quotes and symbol search? | Quotes: yes. Symbol search: 501 on the Sandbox; we fall back to a quote by ticker | D27, F13 |
+| Q6 — `raw_type` strings | `Individual`, `IRA` (Sandbox); `MSB`, `CARD` (Wealthsimple). Shown as-is | D27 |
+| Q9 — TSX symbol format (`VFV.TO` vs `VFV`) | Not testable on the US-only Sandbox; we compare both `symbol` and `raw_symbol` | D27 |
+| Q11 — position `price` usable as a fallback | Yes, a decimal string with `data_freshness.as_of`; used only when no quote is available | D27 |
+
+## Still to confirm with real webhooks (P12)
 
 | Question (PRODUCT_VISION §21) | What we assumed | Where |
 |---|---|---|
-| Q3 — can OAuth tokens call quotes and symbol search? | Yes; a 403 on quotes falls back to the position price | `intents/context.ts`, D19 |
-| Q6 — `raw_type` strings | Shown as-is, never branched on | D16 |
 | Q7 — does a retried webhook keep its `eventTimestamp`? | Either way is safe (stale events are re-sync hints) | D23, F3 |
 | Q8 — is the webhook signature exactly Python's `json.dumps(sort_keys=True, separators=(",",":"))` with `ensure_ascii`? | Yes; tests compare with Python-generated vectors; the real fixture test is ready | D23, F4 |
-| Q9 — TSX symbol format (`VFV.TO` vs `VFV`) | Either matches: we compare both `symbol` and `raw_symbol` | `intents/symbols.ts` |
-| Q11 — position `price` usable as a fallback | Used only when no quote is available, labelled with its source | D19 |
