@@ -1,7 +1,7 @@
 # Demo video script (about 90 seconds)
 
 **Problem and answer (20 s) → the site (30 s) → Claude, both prompts live (40 s) → close (5 s).**
-The setup checklist and the two Claude prompts are at the end.
+The setup checklist is at the end.
 
 ---
 
@@ -36,18 +36,30 @@ The setup checklist and the two Claude prompts are at the end.
 
 ## 3 · Claude · 0:50–1:30
 
-*Switch to claude.ai. Paste Prompt 1 while you say this:*
+**Step 1: switch to claude.ai and paste Prompt 1 into the box (don't send yet):**
+
+```
+Buy 5 shares of AAPL in my Individual account
+```
+
+**While pasting, say:**
 > "I'm going to give Claude two requests, first a trade that's too big for my rules, and then a research request where it has to stay inside them."
 
-**Send Prompt 1. When Claude says it was rejected:**
+**Step 2: press Enter. When Claude says it was rejected, say:**
 > "That's about 900 dollars, way over my 250 dollar limit, so my site blocked it and told Claude exactly why."
 
-**Paste and send Prompt 2.** *Say nothing while Claude works; this part gets sped up in editing.*
+**Step 3: paste Prompt 2 into the same chat and press Enter:**
 
-**When Claude says the order is waiting for you:**
+```
+Research how Apple's stock is doing this week, look at my Individual account and my trading rules, then buy as many whole shares of AAPL as my rules allow.
+```
+
+*Say nothing while Claude works; this part gets sped up in editing.*
+
+**Step 4: when Claude says the order is waiting for you, say:**
 > "This time Claude looked up Apple, checked my account and my rules, and asked for one share, but it still can't buy anything until I say yes."
 
-**Click the link Claude gives you, then click Approve:**
+**Step 5: click the link Claude gives you, then click Approve, and say:**
 > "When I approve, my site checks every rule again with the latest price, and it buys in practice mode, so no real money is spent."
 
 ---
