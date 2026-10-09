@@ -1,0 +1,41 @@
+# Render deploy config (one free web service, V§15). Secrets are set in the Render dashboard
+# (sync: false), never in this file.
+services:
+  - type: web
+    name: guardrail-gateway
+    runtime: node
+    plan: free
+    # Same region as the Neon database (us-east-1).
+    region: virginia
+    branch: main
+    autoDeploy: true
+    # --include=dev: the build needs TypeScript, and NODE_ENV=production would skip dev dependencies.
+    buildCommand: npm ci --include=dev && npm run build
+    # Migrations run before every start, so a deploy never serves code against an old schema.
+    startCommand: node dist/db/migrate.js && node dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: APP_BASE_URL
+        sync: false
+      - key: SNAPTRADE_REDIRECT_URI
+        sync: false
+      - key: SNAPTRADE_OAUTH_CLIENT_ID
+        sync: false
+      - key: SNAPTRADE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: SNAPTRADE_CONSUMER_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: MCP_ALLOWED_CLIENT_HOSTS
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
