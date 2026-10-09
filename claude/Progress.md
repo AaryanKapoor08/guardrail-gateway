@@ -129,7 +129,7 @@ Last Updated: 2026-10-04
 - [x] MCP integration tests pass
 - [ ] MCP Inspector (`npx @modelcontextprotocol/inspector`) connects to the deployed URL via OAuth and lists 8 tools
 - [x] **Claude web:** add the custom connector → consent → "list my accounts" works (2026-10-09, real Sandbox; a 5 × AAPL proposal was rejected with both limit reasons)
-- [ ] **Claude web:** "buy 1 share of <sandbox symbol> in <account>" → pending + link → approve in browser → ask Claude for status → `FILLED`
+- [x] **Claude web:** "buy 1 share of <sandbox symbol> in <account>" → pending + link → approve in browser → ask Claude for status → `FILLED` (2026-10-09: 1 AAPL filled at $180.50, paper, real Sandbox quote)
 - [ ] **Claude Code:** same connect + list flow via loopback redirect
 - [ ] Revoking the app on the dashboard → Claude's next call fails and asks to reconnect
 - [x] Commits: `feat(mcp): mount sdk v2 handler behind bearer gate` · `feat(mcp): add read-only account and policy tools` · `feat(mcp): add propose status list and cancel tools` · `test(mcp): end-to-end tool flow through mcp client`
