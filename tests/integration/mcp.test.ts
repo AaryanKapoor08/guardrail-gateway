@@ -1,6 +1,6 @@
 import type { Client } from '@modelcontextprotocol/client';
 import { eq } from 'drizzle-orm';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatabaseConnection } from '../../src/db/client.js';
 import { mcpGrants, orderIntents, snaptradeGrants } from '../../src/db/schema.js';
 import { HUMAN_APPROVAL_SENTENCE } from '../../src/mcp/tool-kit.js';
@@ -11,6 +11,7 @@ import {
   signInTestUser,
   type TestApp,
 } from '../helpers/app.js';
+import { DEFAULT_TEST_START } from '../helpers/clock.js';
 import { setupTestDb, truncateAll } from '../helpers/db.js';
 import { allowAccount, countIntents, findAccountRef, intentStatus } from '../helpers/intents.js';
 import {
@@ -43,10 +44,14 @@ const TOOL_NAMES = [
 ];
 
 beforeAll(async () => {
+  // The SDK's bearer gate re-checks token expiry against the real Date.now(), which our injected
+  // clock can't reach. Pin Date to the test clock's start so the two agree whatever today is.
+  vi.useFakeTimers({ toFake: ['Date'], now: DEFAULT_TEST_START });
   connection = await setupTestDb();
 });
 
 afterAll(async () => {
+  vi.useRealTimers();
   await connection.pool.end();
 });
 
