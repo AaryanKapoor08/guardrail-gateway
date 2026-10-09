@@ -86,19 +86,3 @@ Never show the `.env` file, tokens, or real (non-Sandbox) account numbers.
 **If Claude asks for a fraction of a share or 0 shares:** reply "Buy 1 whole share of AAPL in my Individual account" and cut the first answer out.
 **If the order hits the daily limit:** on Policy, set the Daily limit to 2000 and save.
 **After recording:** check the kill switch is off.
-
----
-
-## The two Claude prompts (both live, in the same chat)
-
-**Prompt 1: too big, gets blocked**
-
-```
-Buy 5 shares of AAPL in my Individual account
-```
-
-**Prompt 2: research, then a trade that fits my rules**
-
-```
-Research how Apple's stock is doing this week, look at my Individual account and my trading rules, then buy as many whole shares of AAPL as my rules allow.
-```
