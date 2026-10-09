@@ -1,6 +1,6 @@
-# Demo video script (about 85 seconds)
+# Demo video script (about 90 seconds)
 
-**Problem and answer (20 s) → the site (30 s) → Claude researches and trades (30 s) → close (5 s).**
+**Problem and answer (20 s) → the site (30 s) → Claude, both prompts live (40 s) → close (5 s).**
 The setup checklist and the two Claude prompts are at the end.
 
 ---
@@ -9,7 +9,7 @@ The setup checklist and the two Claude prompts are at the end.
 
 *Scroll slowly through the four cards while you talk.*
 
-> "AI agents can now trade in real brokerage accounts through SnapTrade, but telling an AI to never spend more than 250 dollars is just a suggestion. Guardrail Gateway turns that into a guarantee, because the AI can only propose trades, my rules are enforced on the server, and nothing happens until I approve it."
+> "AI assistants can now trade in real investment accounts through SnapTrade, but if you tell an AI to never spend more than 250 dollars, nothing actually stops it from getting that wrong. Guardrail Gateway fixes that, because the AI can only ask to make a trade, my own rules check every request, and nothing gets bought until I say yes."
 
 ---
 
@@ -18,44 +18,45 @@ The setup checklist and the two Claude prompts are at the end.
 *Click each page in the top bar, then say its line.*
 
 **Dashboard**
-> "I sign in with SnapTrade, I'm in paper mode with the kill switch off, and the AI can only see the one account I've allowed."
+> "I sign in with my SnapTrade account, and here I can see I'm in practice mode, my emergency stop is off, and Claude can only see the one account I've allowed."
 
 **Policy**
-> "These are my rules, sixteen checks enforced on the server, and the AI can read them but it can never change them."
+> "These are my rules, like a 250 dollar limit per order and 600 dollars a day, and Claude can read them but it can never change them."
 
 **Orders**
-> "Every proposal gets recorded, and this one, nine hundred dollars of Apple, was blocked before it ever reached the broker."
+> "Every order Claude asks for shows up here, along with whether my rules allowed it or blocked it."
 
 **Audit log**
-> "Every single step lands in an audit log that nobody can edit."
+> "And every step gets written to a history that nobody can edit or delete."
 
 **AI apps**
-> "Claude connects through MCP with OAuth, and I can cut it off with one click."
+> "This is where Claude is connected, and I can disconnect it with one click."
 
 ---
 
-## 3 · Claude · 0:50–1:20
+## 3 · Claude · 0:50–1:30
 
-*Switch to claude.ai. Prompt 2 is already pasted in the box.*
+*Switch to claude.ai. Paste Prompt 1 while you say this:*
+> "I'm going to give Claude two requests, first a trade that's too big for my rules, and then a research request where it has to stay inside them."
 
-**As you press Enter** (normal speed)
-> "Now I'll ask Claude to research Apple and buy as much as my rules allow."
+**Send Prompt 1. When Claude says it was rejected:**
+> "That's about 900 dollars, way over my 250 dollar limit, so my site blocked it and told Claude exactly why."
 
-**While Claude works** (sped up 3× in editing, stay silent)
+**Paste and send Prompt 2.** *Say nothing while Claude works; this part gets sped up in editing.*
 
-**When Claude says the order is waiting for you** (normal speed)
-> "Claude read my holdings and my rules through our tools and sized the order to fit, but it can't approve its own trade, only I can."
+**When Claude says the order is waiting for you:**
+> "This time Claude looked up Apple, checked my account and my rules, and asked for one share, but it still can't buy anything until I say yes."
 
-**Click the approval link, then click Approve**
-> "When I approve, every rule runs again against a fresh SnapTrade price, and it fills in paper mode so no real money moves."
+**Click the link Claude gives you, then click Approve:**
+> "When I approve, my site checks every rule again with the latest price, and it buys in practice mode, so no real money is spent."
 
 ---
 
-## 4 · Close · 1:20–1:25
+## 4 · Close · 1:30–1:35
 
 *Click Guardrail Gateway (top left) to go back to the home page.*
 
-> "SnapTrade gives AI access to brokerages, and Guardrail Gateway makes that access safe to ship."
+> "SnapTrade lets AI reach your brokerage, and Guardrail Gateway makes sure you're always the one in control."
 
 ---
 
@@ -65,28 +66,26 @@ The setup checklist and the two Claude prompts are at the end.
 2. **Dashboard:** the tiles say Paper, Kill switch Off, and Waiting for you 0.
 3. **Policy:** Per-order limit 250, Daily limit 600, Currency USD. If anything is different, fix it and click Save policy.
 4. **Orders:** deny anything that is still waiting.
-5. **claude.ai:** go to Settings → Connectors → Guardrail Gateway and set the tools to **Always allow**.
-6. Send **Prompt 1** in a claude.ai chat, so a rejected order shows up on the Orders page.
-7. Open a **new** claude.ai chat and paste **Prompt 2** without sending it.
-8. Go back to our home page, zoom to 110–125 %, close other tabs, and record with Loom.
+5. **claude.ai:** go to Settings → Connectors → Guardrail Gateway and set the tools to **Always allow**, then open a new chat with Guardrail Gateway switched on.
+6. Go back to our home page, zoom to 110–125 %, close other tabs, and record with Loom.
 
 Never show the `.env` file, tokens, or real (non-Sandbox) account numbers.
 
-**If Claude proposes a fraction or 0 shares:** reply "Buy 1 whole share of AAPL in my Individual account" and cut the first answer out.
+**If Claude asks for a fraction of a share or 0 shares:** reply "Buy 1 whole share of AAPL in my Individual account" and cut the first answer out.
 **If the order hits the daily limit:** on Policy, set the Daily limit to 2000 and save.
 **After recording:** check the kill switch is off.
 
 ---
 
-## The two Claude prompts
+## The two Claude prompts (both live, in the same chat)
 
-**Prompt 1: before recording, off camera** (this creates the blocked order you show on the Orders page)
+**Prompt 1: too big, gets blocked**
 
 ```
 Buy 5 shares of AAPL in my Individual account
 ```
 
-**Prompt 2: on camera, in a new chat**
+**Prompt 2: research, then a trade that fits my rules**
 
 ```
 Research how Apple's stock is doing this week, look at my Individual account and my trading rules, then buy as many whole shares of AAPL as my rules allow.
