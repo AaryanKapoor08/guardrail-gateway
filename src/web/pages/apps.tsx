@@ -9,7 +9,10 @@ export function AppsPage(props: { signedIn: SignedIn; apps: readonly ConnectedAp
   const csrfToken = props.signedIn.session.csrfToken;
   return (
     <Layout title="Connected AI apps" signedIn={props.signedIn}>
-      <h1>Connected AI apps</h1>
+      <div class="page-head">
+        <p class="eyebrow">Settings</p>
+        <h1>Connected AI apps</h1>
+      </div>
       <p>
         These apps can read the accounts you allowed and propose orders. Every order still needs
         your approval. Disconnecting an app stops it immediately.

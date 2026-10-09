@@ -45,19 +45,27 @@ export function Layout(props: LayoutProps) {
       </head>
       <body>
         <header>
-          <a href="/" class="brand">
-            Guardrail Gateway
-          </a>
-          {props.signedIn === undefined ? null : <SignedInNav signedIn={props.signedIn} />}
+          <div class="nav">
+            <a href="/" class="brand">
+              Guardrail <span class="brand-dim">Gateway</span>
+            </a>
+            {props.signedIn === undefined ? (
+              <a href="/signin" class="button secondary nav-cta">
+                Sign in
+              </a>
+            ) : (
+              <SignedInNav signedIn={props.signedIn} />
+            )}
+          </div>
         </header>
         {props.signedIn?.user.isDemo === true ? (
-          <div class="demo-banner">
+          <div class="top-banner demo-banner">
             DEMO DATA, not a real brokerage. This demo account and everything in it is deleted 24
             hours after it was created. <a href="/try">Guided demo</a>
           </div>
         ) : null}
         {props.signedIn?.user.killSwitch === true ? (
-          <div class="kill-switch-on">
+          <div class="top-banner kill-switch-on">
             Kill switch is ON: every order the AI proposes is refused.{' '}
             <a href="/dashboard#kill-switch">Turn it off on the dashboard</a>
           </div>
@@ -66,7 +74,7 @@ export function Layout(props: LayoutProps) {
         <footer>
           <p>Not financial advice. Guardrail Gateway never recommends trades.</p>
           <p>
-            <a href="/privacy">Privacy</a>
+            Built on <a href="https://snaptrade.com">SnapTrade</a> · <a href="/privacy">Privacy</a>
           </p>
         </footer>
       </body>

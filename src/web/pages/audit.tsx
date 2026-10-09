@@ -43,7 +43,10 @@ function AuditRow(props: { entry: AuditEntry }) {
 export function AuditPage(props: { signedIn: SignedIn; entries: readonly AuditEntry[] }) {
   return (
     <Layout title="Audit log" signedIn={props.signedIn}>
-      <h1>Audit log</h1>
+      <div class="page-head">
+        <p class="eyebrow">History</p>
+        <h1>Audit log</h1>
+      </div>
       <p>
         The last {props.entries.length} events, newest first. The log can't be edited or deleted,
         except by deleting your whole account.

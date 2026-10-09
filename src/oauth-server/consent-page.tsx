@@ -41,7 +41,10 @@ export function ConsentPage(props: ConsentPageProps) {
   const csrfToken = props.signedIn.session.csrfToken;
   return (
     <Layout title="Connect an AI app" signedIn={props.signedIn}>
-      <h1>Connect {props.clientHost} to Guardrail Gateway?</h1>
+      <div class="page-head">
+        <p class="eyebrow">Connect an AI app</p>
+        <h1>Connect {props.clientHost} to Guardrail Gateway?</h1>
+      </div>
       <p>
         You are on <strong>{props.ourHost}</strong>. The app asking for access is{' '}
         <strong>{props.clientHost}</strong>. After you decide, you'll be sent back to{' '}

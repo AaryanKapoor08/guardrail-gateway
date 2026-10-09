@@ -5,7 +5,10 @@ import { Layout } from '../layout.js';
 export function PrivacyPage(props: { signedIn: SignedIn | undefined }) {
   return (
     <Layout title="Privacy" signedIn={props.signedIn}>
-      <h1>Privacy</h1>
+      <div class="page-head">
+        <p class="eyebrow">Legal</p>
+        <h1>Privacy</h1>
+      </div>
       <h2>What we store, and why</h2>
       <ul>
         <li>

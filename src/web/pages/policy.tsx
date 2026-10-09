@@ -100,7 +100,10 @@ function PolicyForm(props: { values: PolicyFormValues; csrfToken: string }) {
 export function PolicyPage(props: PolicyPageProps) {
   return (
     <Layout title="Policy" signedIn={props.signedIn}>
-      <h1>Your trading policy</h1>
+      <div class="page-head">
+        <p class="eyebrow">Policy</p>
+        <h1>Your trading policy</h1>
+      </div>
       <p>
         Every order the AI proposes is checked against these rules, at proposal and again when you
         approve. The AI can read them but never change them. Version {props.version}.

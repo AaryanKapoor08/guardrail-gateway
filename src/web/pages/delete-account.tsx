@@ -7,7 +7,10 @@ export const DELETE_CONFIRMATION = 'DELETE';
 export function DeleteAccountPage(props: { signedIn: SignedIn; problem?: string | undefined }) {
   return (
     <Layout title="Delete account" signedIn={props.signedIn}>
-      <h1>Delete your account</h1>
+      <div class="page-head">
+        <p class="eyebrow">Account</p>
+        <h1>Delete your account</h1>
+      </div>
       <p>This permanently deletes, on Guardrail Gateway:</p>
       <ul>
         <li>your SnapTrade sign-in (we also revoke it at SnapTrade),</li>

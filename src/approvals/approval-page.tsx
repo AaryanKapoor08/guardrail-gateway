@@ -93,13 +93,17 @@ function OrderDetails(props: { intent: IntentView }) {
 }
 
 function PolicyChecks(props: { intent: IntentView }) {
+  const passedCount = props.intent.checkResults.filter((result) => result.passed).length;
   return (
-    <section>
+    <section class="box">
       <h2>Policy checks</h2>
-      <ul>
+      <p class="notice">
+        {passedCount} of {props.intent.checkResults.length} rules passed.
+      </p>
+      <ul class="checks">
         {props.intent.checkResults.map((result) => (
           <li class={result.passed ? 'pass' : 'fail'}>
-            {result.passed ? 'Pass: ' : 'Fail: '}
+            <span class="sr-only">{result.passed ? 'Pass: ' : 'Fail: '}</span>
             {result.reason}
           </li>
         ))}
@@ -112,19 +116,24 @@ function Decision(props: { intent: IntentView; csrfToken: string }) {
   const { intent } = props;
   return (
     <section class="box">
+      <h2>Your decision</h2>
       <p>
         This approval expires at <strong>{fmtToronto(intent.expiresAt)}</strong>.
       </p>
-      <form method="post" action={`/approvals/${intent.id}/approve`} class="inline">
-        <CsrfField token={props.csrfToken} />
-        <button type="submit">Approve</button>
-      </form>{' '}
-      <form method="post" action={`/approvals/${intent.id}/deny`} class="inline">
-        <CsrfField token={props.csrfToken} />
-        <button type="submit" class="secondary">
-          Deny
-        </button>
-      </form>
+      <div class="decision-buttons">
+        <form method="post" action={`/approvals/${intent.id}/approve`} class="inline">
+          <CsrfField token={props.csrfToken} />
+          <button type="submit" class="big">
+            Approve
+          </button>
+        </form>{' '}
+        <form method="post" action={`/approvals/${intent.id}/deny`} class="inline">
+          <CsrfField token={props.csrfToken} />
+          <button type="submit" class="secondary big">
+            Deny
+          </button>
+        </form>
+      </div>
     </section>
   );
 }
@@ -138,6 +147,7 @@ function Outcome(props: { intent: IntentView; isDemo: boolean }) {
   const extra = intent.status === 'EXPIRED' ? ' Ask the AI to propose again.' : '';
   return (
     <section class="box">
+      <h2>Outcome</h2>
       <p>
         <strong>{statusLabel(intent.status)}.</strong>
         {fill}
@@ -154,14 +164,39 @@ function Outcome(props: { intent: IntentView; isDemo: boolean }) {
   );
 }
 
+// The one line a person reads first: what, how many, and roughly how much.
+function OrderSummary(props: { intent: IntentView }) {
+  const { intent } = props;
+  return (
+    <div class="card order-hero">
+      <div>
+        <p class="label">
+          Proposed by {intent.proposedBy} · {intent.accountName}{' '}
+          {maskedNumber(intent.accountNumberLast4)}
+        </p>
+        <p class="big">
+          {sideLabel(intent.side)} {intent.quantity} {intent.symbol}
+        </p>
+      </div>
+      <div>
+        <p class="label">Estimated value</p>
+        <p class="value">{moneyOrDash(intent.estValue, intent.currency)}</p>
+      </div>
+    </div>
+  );
+}
+
 export function ApprovalPage(props: ApprovalPageProps) {
   const { intent, signedIn } = props;
   const isPending = intent.status === 'PENDING_APPROVAL';
   return (
     <Layout title="Review order" signedIn={signedIn}>
-      <h1>
-        Review order <ModeBadge mode={intent.mode} />
-      </h1>
+      <div class="page-head">
+        <p class="eyebrow">{isPending ? 'Approval needed' : statusLabel(intent.status)}</p>
+        <h1>
+          Review order <ModeBadge mode={intent.mode} />
+        </h1>
+      </div>
       {props.notice === undefined ? null : <div class="banner danger">{props.notice}</div>}
       <div class="banner">
         This order was proposed by an AI assistant. Check every detail. Approving is your decision.
@@ -169,18 +204,25 @@ export function ApprovalPage(props: ApprovalPageProps) {
       {props.duplicateCount > 0 ? (
         <div class="banner">You have another pending order with identical details.</div>
       ) : null}
-      <OrderDetails intent={intent} />
-      <p class="notice">
-        {intent.priceSource === 'none' ? UNAVAILABLE_DISCLAIMER : ESTIMATE_LABEL}
-      </p>
-      <p class="notice">{intent.priceSource === 'none' ? '' : ESTIMATE_DISCLAIMER}</p>
-      <PolicyChecks intent={intent} />
-      {isPending ? (
-        <Decision intent={intent} csrfToken={signedIn.session.csrfToken} />
-      ) : (
-        <Outcome intent={intent} isDemo={signedIn.user.isDemo} />
-      )}
-      <p class="notice">Not financial advice. Guardrail Gateway never recommends trades.</p>
+      <OrderSummary intent={intent} />
+      <div class="split">
+        <section class="box">
+          <h2>Order details</h2>
+          <OrderDetails intent={intent} />
+          <p class="notice">
+            {intent.priceSource === 'none' ? UNAVAILABLE_DISCLAIMER : ESTIMATE_LABEL}
+          </p>
+          <p class="notice">{intent.priceSource === 'none' ? '' : ESTIMATE_DISCLAIMER}</p>
+        </section>
+        <div class="stack sticky">
+          {isPending ? (
+            <Decision intent={intent} csrfToken={signedIn.session.csrfToken} />
+          ) : (
+            <Outcome intent={intent} isDemo={signedIn.user.isDemo} />
+          )}
+          <PolicyChecks intent={intent} />
+        </div>
+      </div>
     </Layout>
   );
 }

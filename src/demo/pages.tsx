@@ -18,9 +18,11 @@ export function SignInChoices(props: { mcpRequestId?: string | undefined }) {
         {props.mcpRequestId === undefined ? null : (
           <input type="hidden" name="mcp_request" value={props.mcpRequestId} />
         )}
-        <button type="submit">Try the demo (no sign-up, ~1 minute)</button>
+        <button type="submit" class="big">
+          Try the demo (no sign-up, ~1 minute)
+        </button>
       </form>{' '}
-      <a href={loginHref} class="button">
+      <a href={loginHref} class="button secondary big">
         Sign in with SnapTrade
       </a>
     </div>
@@ -30,8 +32,11 @@ export function SignInChoices(props: { mcpRequestId?: string | undefined }) {
 export function SignInPage(props: { mcpRequestId: string | undefined }) {
   return (
     <Layout title="Sign in">
-      <h1>Sign in to Guardrail Gateway</h1>
-      <p>
+      <div class="page-head">
+        <p class="eyebrow">Welcome</p>
+        <h1>Sign in to Guardrail Gateway</h1>
+      </div>
+      <p class="lead">
         Use the demo to try everything with fake brokerage data and no account, or sign in with
         SnapTrade to use your own connected brokerage accounts.
       </p>
@@ -47,7 +52,7 @@ export function SignInPage(props: { mcpRequestId: string | undefined }) {
 function Checklist(props: { intents: readonly IntentView[] }) {
   const done = completedSteps(props.intents);
   const item = (isDone: boolean, text: string) => (
-    <li>
+    <li class={isDone ? 'pass' : ''}>
       {isDone ? '✔ ' : '○ '}
       {text}
     </li>
@@ -69,7 +74,9 @@ function StepButton(props: { step: GuidedStep; number: number; csrfToken: string
       <p>{props.step.explanation}</p>
       <form method="post" action={`/try/${props.step.id}`}>
         <CsrfField token={props.csrfToken} />
-        <button type="submit">{props.step.title}</button>
+        <button type="submit" class="big">
+          {props.step.title}
+        </button>
       </form>
     </section>
   );
@@ -129,17 +136,25 @@ export function TryPage(props: TryPageProps) {
   const csrfToken = props.signedIn.session.csrfToken;
   return (
     <Layout title="Guided demo" signedIn={props.signedIn}>
-      <h1>See the guardrails in action</h1>
-      <p>
+      <div class="page-head">
+        <p class="eyebrow">Guided demo</p>
+        <h1>See the guardrails in action</h1>
+      </div>
+      <p class="lead">
         Each button proposes an order the way an AI assistant would, through the same checks. Your
         policy: buys only, at most $100 per order and $250 a day, stocks and ETFs only.
       </p>
-      <Checklist intents={props.intents} />
+      <section class="box">
+        <h2>Your progress</h2>
+        <Checklist intents={props.intents} />
+        <PaperHoldings positions={props.paperPositions} />
+      </section>
       {props.result === null ? null : <Result intent={props.result} />}
-      <PaperHoldings positions={props.paperPositions} />
-      {GUIDED_STEPS.map((step, index) => (
-        <StepButton step={step} number={index + 1} csrfToken={csrfToken} />
-      ))}
+      <div class="steps">
+        {GUIDED_STEPS.map((step, index) => (
+          <StepButton step={step} number={index + 1} csrfToken={csrfToken} />
+        ))}
+      </div>
       <section class="box">
         <h2>4. See what happened</h2>
         <p>

@@ -24,7 +24,10 @@ export function IntentsPage(props: { signedIn: SignedIn; intents: readonly Inten
   const csrfToken = props.signedIn.session.csrfToken;
   return (
     <Layout title="Recent orders" signedIn={props.signedIn}>
-      <h1>Recent orders</h1>
+      <div class="page-head">
+        <p class="eyebrow">Orders</p>
+        <h1>Recent orders</h1>
+      </div>
       {props.intents.length === 0 ? (
         <p>No orders yet.</p>
       ) : (
