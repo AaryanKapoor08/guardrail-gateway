@@ -70,6 +70,7 @@ export type OrderInput = {
   order_type?: 'market' | 'limit';
   limit_price?: string;
   idempotency_key?: string;
+  reasoning?: Record<string, unknown>;
 };
 
 // Buys 1 XEQT.TO at market by default (about $32 CAD: inside the default $100 limit).

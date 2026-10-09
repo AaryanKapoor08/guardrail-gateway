@@ -252,6 +252,11 @@ export const orderIntents = pgTable(
     priceAsOf: timestamptz('price_as_of'),
     status: text('status', { enum: INTENT_STATES }).notNull(),
     checkResults: jsonb('check_results').notNull(),
+    // The claim check (D30): the AI's reasoning as it sent it (length-capped by Zod), and how its
+    // claims compared with the broker's data. Null for intents from before migration 0005 and
+    // for the user's own test proposals, which have no AI reasoning.
+    aiReasoning: jsonb('ai_reasoning'),
+    claimResults: jsonb('claim_results'),
     policyVersion: integer('policy_version').notNull(),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     expiresAt: timestamptz('expires_at').notNull(),

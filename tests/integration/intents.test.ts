@@ -6,7 +6,7 @@ import { auditEvents, orderIntents, sessions, users } from '../../src/db/schema.
 import type { Deps } from '../../src/deps.js';
 import { setKillSwitch, setMode } from '../../src/intents/controls.js';
 import { approveIntent, cancelIntent } from '../../src/intents/decisions.js';
-import { getIntent } from '../../src/intents/service.js';
+import { getIntent, proposeOrder } from '../../src/intents/service.js';
 import { runSweepOnce } from '../../src/jobs/sweeper.js';
 import { ConflictError, NotFoundError } from '../../src/lib/errors.js';
 import {
@@ -555,5 +555,98 @@ describe('who proposed it', () => {
 
     expect(audit).toEqual({ actor: AI_PROPOSER.actor, actorDetail: 'claude.ai' });
     expect((await getIntent(testApp.deps, user.userId, intentId)).proposedBy).toBe('claude.ai');
+  });
+});
+
+describe('the claim check', () => {
+  const WRONG_PRICE_REASONING = {
+    why: 'The user wants a one-fund portfolio.',
+    expected_price: '50',
+    company_name: 'iShares Core Equity ETF Portfolio',
+    user_request: 'buy one share of XEQT',
+    sources: ['https://www.blackrock.com/ca/xeqt'],
+  };
+
+  it('stores a differing price claim when the AI expected the wrong price', async () => {
+    const intent = expectIntent(
+      await proposeTestOrder(testApp, user.userId, {
+        account_ref: accountRef,
+        reasoning: WRONG_PRICE_REASONING,
+      }),
+    );
+
+    expect(intent.aiReasoning).toEqual(WRONG_PRICE_REASONING);
+    expect(intent.claimResults).toEqual([
+      {
+        claim: 'price',
+        status: 'differs',
+        aiSaid: '50',
+        brokerSays: '32.1',
+        message:
+          "The AI expected about $50.00 CAD a share, but your broker's latest price is $32.10 CAD (36% lower).",
+      },
+      expect.objectContaining({ claim: 'company', status: 'matches' }),
+    ]);
+  });
+
+  it('never changes the policy decision', async () => {
+    const intent = expectIntent(
+      await proposeTestOrder(testApp, user.userId, {
+        account_ref: accountRef,
+        reasoning: WRONG_PRICE_REASONING,
+      }),
+    );
+
+    expect(intent.status).toBe('PENDING_APPROVAL');
+    expect(intent.checkResults.every((check) => check.passed)).toBe(true);
+  });
+
+  it('records only the claim statuses in the audit log, never the AI free text', async () => {
+    await proposeTestOrder(testApp, user.userId, {
+      account_ref: accountRef,
+      reasoning: WRONG_PRICE_REASONING,
+    });
+
+    const [audit] = await testApp.deps.db
+      .select({ details: auditEvents.details })
+      .from(auditEvents)
+      .where(eq(auditEvents.eventType, 'intent.proposed'));
+
+    expect(audit?.details).toMatchObject({
+      claimStatuses: [
+        { claim: 'price', status: 'differs' },
+        { claim: 'company', status: 'matches' },
+      ],
+    });
+    expect(JSON.stringify(audit?.details)).not.toContain('one-fund portfolio');
+  });
+
+  it('tells the human the AI gave no reasons when it sent none', async () => {
+    const intent = expectIntent(
+      await proposeTestOrder(testApp, user.userId, { account_ref: accountRef }),
+    );
+
+    expect(intent.aiReasoning).toBeNull();
+    expect(intent.claimResults).toEqual([
+      { claim: 'reasoning', status: 'missing', message: 'The AI gave no reasons for this order.' },
+    ]);
+  });
+
+  it("skips the claim check for the user's own test orders", async () => {
+    const intent = expectIntent(
+      await proposeOrder(testApp.deps, {
+        userId: user.userId,
+        proposer: { actor: 'user', actorDetail: 'manual test', grantId: null },
+        input: {
+          account_ref: accountRef,
+          symbol: 'XEQT.TO',
+          side: 'buy',
+          quantity: '1',
+          order_type: 'market',
+        },
+      }),
+    );
+
+    expect(intent.claimResults).toBeNull();
   });
 });

@@ -1,13 +1,17 @@
 import { and, desc, eq, inArray, ne, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
+import { type ClaimResult, ClaimResultSchema } from '../claims/check-claims.js';
 import type { DatabaseExecutor } from '../db/client.js';
 import { accounts, executions, orderIntents } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
 import { RULE_IDS } from '../policy/types.js';
+import { type AiReasoning, AiReasoningSchema } from './propose-input.js';
 import type { IntentState } from './state-machine.js';
 
 // What the rest of the app (pages, MCP tools, email) sees of an intent: our own stored and
-// resolved data, never AI-written text (V§13 prompt injection), and never SnapTrade ids.
+// resolved data and never SnapTrade ids. The one exception to "never AI-written text" (V§13
+// prompt injection) is `aiReasoning`, which only the approval page's claim card shows, as plain
+// text clearly labelled as the AI's own words (D30).
 
 const CheckResultsSchema = z.array(
   z.object({ rule: z.enum(RULE_IDS), passed: z.boolean(), reason: z.string() }),
@@ -42,6 +46,9 @@ export type IntentView = {
   readonly priceSource: string;
   readonly priceAsOf: Date | null;
   readonly checkResults: CheckResult[];
+  // Null for intents from before the claim check and for the user's own test proposals.
+  readonly aiReasoning: AiReasoning | null;
+  readonly claimResults: ClaimResult[] | null;
   readonly policyVersion: number;
   readonly fingerprint: string;
   readonly proposedBy: string;
@@ -81,6 +88,8 @@ const viewColumns = {
   priceSource: orderIntents.priceSource,
   priceAsOf: orderIntents.priceAsOf,
   checkResults: orderIntents.checkResults,
+  aiReasoning: orderIntents.aiReasoning,
+  claimResults: orderIntents.claimResults,
   policyVersion: orderIntents.policyVersion,
   fingerprint: orderIntents.fingerprint,
   proposedBy: orderIntents.proposedBy,
@@ -104,12 +113,18 @@ function selectRows(db: DatabaseExecutor, where: SQL | undefined, limit: number)
 
 type ViewRow = Awaited<ReturnType<typeof selectRows>>[number];
 
+const ClaimResultsSchema = z.array(ClaimResultSchema).nullable();
+
 function toView(row: ViewRow): IntentView {
-  const { filledQuantity, avgFillPrice, checkResults, ...rest } = row;
+  const { filledQuantity, avgFillPrice, checkResults, aiReasoning, claimResults, ...rest } = row;
   const parsedResults = CheckResultsSchema.safeParse(checkResults);
+  const parsedReasoning = AiReasoningSchema.nullable().safeParse(aiReasoning);
+  const parsedClaims = ClaimResultsSchema.safeParse(claimResults);
   return {
     ...rest,
     checkResults: parsedResults.success ? parsedResults.data : [],
+    aiReasoning: parsedReasoning.success ? parsedReasoning.data : null,
+    claimResults: parsedClaims.success ? parsedClaims.data : null,
     execution: filledQuantity === null ? null : { filledQuantity, avgFillPrice },
   };
 }

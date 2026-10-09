@@ -36,6 +36,13 @@
       "when": 1791107607911,
       "tag": "0004_accounts_first_seen_at",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791588924316,
+      "tag": "0005_intent_claim_check",
+      "breakpoints": true
     }
   ]
 }

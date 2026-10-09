@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { sendApprovalEmail } from '../approvals/email.js';
 import { type Actor, writeAudit } from '../audit/write.js';
+import { type ClaimResult, checkClaims } from '../claims/check-claims.js';
 import type { Transaction } from '../db/client.js';
 import { type LockedUser, lockExistingUser } from '../db/locks.js';
 import { orderIntents, users } from '../db/schema.js';
@@ -134,6 +135,25 @@ export function decisionColumns(evaluation: Evaluation, prefetched: Prefetched) 
   };
 }
 
+// The claim check (D30) runs only for AI proposals: the user's own test orders have no AI
+// reasoning to check, so they get no claim card.
+function claimCheckFor(request: DecideRequest): ClaimResult[] | null {
+  if (request.proposer.actor !== 'ai') {
+    return null;
+  }
+  return checkClaims(request.input.reasoning, {
+    symbol: request.security.symbol,
+    securityName: request.security.description,
+    price: request.prefetched.marketPrice,
+    currency: request.security.currency,
+  });
+}
+
+// Audit rows keep only the outcome of each claim, never the AI's free text.
+function claimStatuses(claimResults: ClaimResult[] | null) {
+  return claimResults?.map((result) => ({ claim: result.claim, status: result.status })) ?? null;
+}
+
 export function failedRules(evaluation: Evaluation): string[] {
   return evaluation.results.filter((result) => !result.passed).map((result) => result.rule);
 }
@@ -149,6 +169,7 @@ async function insertProposedIntent(
   },
 ): Promise<string> {
   const { input, security } = request;
+  const claimResults = claimCheckFor(request);
   const [inserted] = await tx
     .insert(orderIntents)
     .values({
@@ -176,6 +197,8 @@ async function insertProposedIntent(
       createdAt: request.now,
       updatedAt: request.now,
       ...decisionColumns(request.evaluation, request.prefetched),
+      aiReasoning: input.reasoning ?? null,
+      claimResults,
     })
     .returning({ id: orderIntents.id });
   if (inserted === undefined) {
@@ -194,6 +217,7 @@ async function insertProposedIntent(
       quantity: input.quantity,
       orderType: input.order_type,
       mode: request.user.mode,
+      claimStatuses: claimStatuses(claimResults),
     },
     createdAt: request.now,
   });
