@@ -117,7 +117,7 @@ Our server is small and hand-written: authorization code + PKCE (S256), Client I
 ## Tradeoffs worth explaining
 
 - **Server-side guardrails, not prompt instructions.** A prompt is a suggestion; a server the AI can't modify is enforcement.
-- **Human approval is the defence against prompt injection.** We can't stop a model from being manipulated, but we make manipulation insufficient: the approval page shows our own resolved data, not text the AI wrote.
+- **Human approval is the defence against prompt injection.** We can't stop a model from being manipulated, but we make manipulation insufficient: the approval page shows our own resolved data. The AI's own reasoning appears only in a clearly labelled claim card, where the gateway fact-checks its expected price and company against the broker's data and flags any difference.
 - **Pure policy engine and state machine.** Deterministic, table-tested (100% branch coverage enforced in CI), and small enough to audit.
 - **Row locks, not advisory locks.** Neon's pooled connections (PgBouncer, transaction mode) break session-level locks; `SELECT … FOR UPDATE` inside a transaction is safe.
 - **Opaque hashed tokens instead of JWTs.** Revocation is instant (kill an app, disconnect, delete) and there are no signing keys; the cost is one indexed lookup per request.

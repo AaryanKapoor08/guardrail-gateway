@@ -37,7 +37,7 @@ The AI is treated as untrusted even when the user's own Claude runs it: anything
 ### 1. Malicious content steers the AI (prompt injection)
 *Goal:* make the AI buy or sell something the user didn't want.
 - **Human approval is mandatory and can't be turned off** (`approval_required`); the AI has **no tool** to approve, deny, change limits, allow accounts, use the kill switch, or switch mode (`src/mcp/handler.ts`, tested: the tool list is exactly 8 read/propose/cancel tools).
-- The approval page shows **our own resolved data** (symbol from SnapTrade's symbol search, our price estimate, account from our database), never text the AI wrote; there are no free-text AI fields.
+- The approval page's order details and policy checks show **our own resolved data** (symbol from SnapTrade's symbol search, our price estimate, account from our database), never text the AI wrote. The one place AI-written text appears is the claim card (D30): the AI's optional `reasoning` (length-capped by Zod, rendered as escaped plain text, source links reduced to hostnames and never clickable), labelled as the AI's claims and checked against the broker's price and security name. A manipulated AI can lie there, but the gateway flags a wrong price or company in red, and the reasoning never changes the policy decision.
 - Server-side policy the AI can't modify: limits, allowlist/denylist, sides, asset types, currency, daily totals including pending orders, re-checked at approval with fresh data.
 - Proposal rate limit (10/min per user) and the duplicate-order warning stop approval spam.
 - Paper mode by default; live mode needs server flags, the `trade` scope, a trade-enabled connection, a paper brokerage account, and an explicit user switch.
