@@ -1303,3 +1303,317 @@ select + .notice {
   display: block;
   margin-top: 0.35rem;
 }
+
+/* ---------- Dashboard and policy ---------- */
+
+.box > .eyebrow {
+  margin-bottom: 0.5rem;
+  font-size: 12px;
+}
+
+button.small,
+.button.small {
+  min-height: 2rem;
+  padding: 0 0.9rem;
+  font-size: 13px;
+}
+
+/* A heading with its action on the right (wraps under it on small screens). */
+.section-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.section-title h2 {
+  margin-bottom: 0.35rem;
+}
+
+.section-title .notice {
+  margin: 0;
+}
+
+.section-title form button[type="submit"] {
+  margin-top: 0;
+}
+
+/* Status at a glance: four tiles that link to the card that changes each one. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(38, 38, 40, 0.55), var(--panel));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  text-decoration: none;
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.tile:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+.tile-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tile-value {
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.tile-detail {
+  color: var(--muted-2);
+  font-size: 13.5px;
+}
+
+.tile.bad {
+  border-color: rgba(255, 101, 104, 0.45);
+  background: linear-gradient(180deg, rgba(255, 101, 104, 0.14), var(--panel));
+}
+
+.tile.warn {
+  border-color: rgba(255, 179, 64, 0.3);
+}
+
+/* Red-tinted cards: the kill switch while it's on, and the disconnect card. */
+section.danger-zone,
+section.danger-zone:hover {
+  border-color: rgba(255, 101, 104, 0.35);
+  background: linear-gradient(180deg, rgba(255, 101, 104, 0.1), var(--panel));
+}
+
+.danger-zone > .eyebrow {
+  color: #ff9a9c;
+}
+
+/* Two cards side by side. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.card-grid > * {
+  margin: 0;
+}
+
+/* Pill plus button in one table cell. */
+.cell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+td .pill {
+  font-weight: 500;
+}
+
+/* Rows like pending approvals: what on the left, actions on the right. */
+.list {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--panel-inner);
+  overflow: hidden;
+}
+
+.list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.list-row:last-child {
+  border-bottom: none;
+}
+
+.list-title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.list-meta {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Nothing here yet, plus what to do next. */
+.empty {
+  margin-top: 0.75rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 1rem;
+  background: var(--panel-inner);
+}
+
+.empty p {
+  margin: 0;
+}
+
+.empty p + p {
+  margin-top: 0.35rem;
+}
+
+/* The policy form is a grid of cards, not one card. */
+main > form.policy-form {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.field input,
+.field select {
+  max-width: none;
+}
+
+.page-head .lead + .pill {
+  margin-top: -0.25rem;
+}
+
+.field .hint {
+  margin: 0.375rem 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* A text box with its unit inside, on the right. */
+.input-unit {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(29, 29, 31, 0.9);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.input-unit:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.input-unit:focus-within {
+  border-color: rgba(100, 168, 255, 0.6);
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.input-unit input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.input-unit input:focus-visible {
+  outline: none;
+}
+
+.input-unit .unit {
+  display: flex;
+  align-items: center;
+  padding: 0 0.875rem;
+  border-left: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Save stays in reach while scrolling the form (CSS only, no script). */
+.save-bar {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin: 1.25rem 0;
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(30, 30, 32, 0.75);
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(40px) saturate(1.5);
+  -webkit-backdrop-filter: blur(40px) saturate(1.5);
+}
+
+.save-bar .notice {
+  margin: 0;
+}
+
+.policy-form .save-bar button[type="submit"] {
+  margin-top: 0;
+}
+
+@media (max-width: 860px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .tile {
+    padding: 1rem;
+  }
+
+  .tile-value {
+    font-size: 1.5rem;
+  }
+
+  .save-bar {
+    border-radius: 1.25rem;
+    padding-left: 1rem;
+  }
+}
+
+/* Text right after a card's button gets breathing room. */
+.box form + p {
+  margin-top: 1rem;
+}

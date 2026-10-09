@@ -31,7 +31,8 @@ function KillSwitch(props: {
   csrfToken: string;
 }) {
   return (
-    <section class="box" id="kill-switch">
+    <section class={props.isOn ? 'box danger-zone' : 'box'} id="kill-switch">
+      <p class="eyebrow">Emergency stop</p>
       <h2>Kill switch: {props.isOn ? 'ON' : 'off'}</h2>
       <p>
         {props.isOn
@@ -74,7 +75,8 @@ function ModeSwitch(props: {
 }) {
   const canGoLive = props.liveModeProblems.length === 0;
   return (
-    <section class="box">
+    <section class="box" id="mode">
+      <p class="eyebrow">Trading mode</p>
       <h2>Mode: {props.mode === 'paper' ? 'paper (simulated)' : 'LIVE (real orders)'}</h2>
       <p>
         Paper mode simulates fills in a ledger here; nothing is sent to a broker. Live mode sends
@@ -94,9 +96,9 @@ function ModeSwitch(props: {
       {props.mode === 'paper' && !canGoLive ? (
         <>
           <p>Live mode isn't available:</p>
-          <ul>
+          <ul class="checks">
             {props.liveModeProblems.map((problem) => (
-              <li>{problem}</li>
+              <li class="fail">{problem}</li>
             ))}
           </ul>
         </>
@@ -125,7 +127,7 @@ function AllowToggle(props: { account: AccountListItem; csrfToken: string }) {
     <form method="post" action={`/accounts/${account.ref}/allow`} class="inline">
       <CsrfField token={props.csrfToken} />
       <input type="hidden" name="allowed" value={account.allowed ? 'false' : 'true'} />
-      <button type="submit" class={account.allowed ? 'secondary' : ''}>
+      <button type="submit" class={account.allowed ? 'secondary small' : 'small'}>
         {account.allowed ? 'Disallow' : 'Allow'}
       </button>
     </form>
@@ -142,10 +144,21 @@ function connectionStatus(account: AccountListItem): string {
   return account.connectionType === 'trade' ? 'OK (trading enabled)' : 'OK (read-only)';
 }
 
+function isConnectionHealthy(account: AccountListItem): boolean {
+  return account.present && !account.connectionDisabled;
+}
+
 function AccountsTable(props: { accounts: readonly AccountListItem[]; csrfToken: string }) {
   if (props.accounts.length === 0) {
     return (
-      <p>No accounts yet. Connect a brokerage in your SnapTrade dashboard, then press Refresh.</p>
+      <div class="empty">
+        <p>
+          <strong>No accounts yet.</strong>
+        </p>
+        <p class="notice">
+          Connect a brokerage in your SnapTrade dashboard, then press Refresh from SnapTrade.
+        </p>
+      </div>
     );
   }
   return (
@@ -171,11 +184,23 @@ function AccountsTable(props: { accounts: readonly AccountListItem[]; csrfToken:
               {account.accountCategory === null ? '' : ` (${account.accountCategory})`}
             </td>
             <td>{account.numberLast4 === null ? 'Not provided' : `••••${account.numberLast4}`}</td>
-            <td>{account.isPaper ? 'Paper' : 'Real'}</td>
-            <td>{connectionStatus(account)}</td>
             <td>
-              {account.allowed ? 'Allowed ' : 'Not allowed '}
-              <AllowToggle account={account} csrfToken={props.csrfToken} />
+              <span class={account.isPaper ? 'pill' : 'pill warn'}>
+                {account.isPaper ? 'Paper' : 'Real'}
+              </span>
+            </td>
+            <td>
+              <span class={isConnectionHealthy(account) ? 'pill ok' : 'pill bad'}>
+                {connectionStatus(account)}
+              </span>
+            </td>
+            <td>
+              <div class="cell-actions">
+                <span class={account.allowed ? 'pill ok' : 'pill'}>
+                  {account.allowed ? 'Allowed ' : 'Not allowed '}
+                </span>
+                <AllowToggle account={account} csrfToken={props.csrfToken} />
+              </div>
             </td>
           </tr>
         ))}
@@ -210,8 +235,11 @@ function McpBox(props: { mcpUrl: string }) {
 function ManualProposal(props: { accounts: readonly AccountListItem[]; csrfToken: string }) {
   const usable = props.accounts.filter((account) => account.allowed && account.present);
   return (
-    <section class="box">
+    <section class="box" id="try">
       <h2>Try it without an AI</h2>
+      <p class="notice">
+        Propose an order yourself. It goes through the same policy checks as the AI's orders.
+      </p>
       {usable.length === 0 ? (
         <p>Allow an account above first.</p>
       ) : (
@@ -263,29 +291,55 @@ function ManualProposal(props: { accounts: readonly AccountListItem[]; csrfToken
   );
 }
 
+function PendingRow(props: { intent: IntentView }) {
+  const { intent } = props;
+  return (
+    <li class="list-row">
+      <div>
+        <p class="list-title">
+          {sideLabel(intent.side)} {intent.quantity} {intent.symbol}
+        </p>
+        <p class="list-meta">
+          {orderTypeLabel(intent)}, {intent.mode} · in {intent.accountName} · proposed by{' '}
+          {intent.proposedBy}
+        </p>
+      </div>
+      <div class="row-actions">
+        <span class="pill warn">Expires {fmtToronto(intent.expiresAt)}</span>
+        <a href={`/approvals/${intent.id}`} class="button small">
+          Review
+        </a>
+      </div>
+    </li>
+  );
+}
+
 function PendingApprovals(props: { intents: readonly IntentView[] }) {
   return (
-    <section>
-      <h2>Pending approvals</h2>
+    <section id="pending">
+      <div class="section-title">
+        <h2>Pending approvals</h2>
+        <a href="/intents" class="button secondary small">
+          See all recent orders
+        </a>
+      </div>
       {props.intents.length === 0 ? (
-        <p>No orders are waiting for your approval.</p>
+        <div class="empty">
+          <p>
+            <strong>No orders are waiting for your approval.</strong>
+          </p>
+          <p class="notice">
+            When the AI proposes an order that passes your policy, it shows up here for you to
+            approve or deny. You can also try one yourself below.
+          </p>
+        </div>
       ) : (
-        <ul>
+        <ul class="list">
           {props.intents.map((intent) => (
-            <li>
-              <a href={`/approvals/${intent.id}`}>
-                {sideLabel(intent.side)} {intent.quantity} {intent.symbol} ({orderTypeLabel(intent)}
-                , {intent.mode})
-              </a>{' '}
-              in {intent.accountName}, proposed by {intent.proposedBy}. Expires{' '}
-              {fmtToronto(intent.expiresAt)}.
-            </li>
+            <PendingRow intent={intent} />
           ))}
         </ul>
       )}
-      <p>
-        <a href="/intents">See all recent orders</a>
-      </p>
     </section>
   );
 }
@@ -325,6 +379,116 @@ function PaperPositions(props: { positions: readonly PaperPosition[] }) {
   );
 }
 
+function AccountsSection(props: { accounts: readonly AccountListItem[]; csrfToken: string }) {
+  return (
+    <section id="accounts">
+      <div class="section-title">
+        <div>
+          <h2>Accounts</h2>
+          <p class="notice">
+            No account is allowed by default. The AI can only see and propose orders for accounts
+            you allow here.
+          </p>
+        </div>
+        <form method="post" action="/accounts/refresh" class="inline">
+          <CsrfField token={props.csrfToken} />
+          <button type="submit" class="secondary small">
+            Refresh from SnapTrade
+          </button>
+        </form>
+      </div>
+      <AccountsTable accounts={props.accounts} csrfToken={props.csrfToken} />
+    </section>
+  );
+}
+
+function DisconnectBox(props: { csrfToken: string }) {
+  return (
+    <section class="box danger-zone">
+      <p class="eyebrow">Danger zone</p>
+      <h2>Disconnect SnapTrade</h2>
+      <p>
+        Revokes our access at SnapTrade, cuts off every connected AI app, and signs you out. Your
+        history stays; you can sign in again later.
+      </p>
+      <form method="post" action="/disconnect">
+        <CsrfField token={props.csrfToken} />
+        <button type="submit" class="danger">
+          Disconnect SnapTrade
+        </button>
+      </form>
+      <p class="notice">
+        Or <a href="/account/delete">delete your account</a> and everything we store.
+      </p>
+    </section>
+  );
+}
+
+type Tone = 'ok' | 'warn' | 'bad' | 'neutral';
+
+function StatusTile(props: {
+  href: string;
+  label: string;
+  value: string;
+  detail: string;
+  tone: Tone;
+}) {
+  return (
+    <a href={props.href} class={`tile ${props.tone}`}>
+      <span class="tile-label">
+        <span class={`dot ${props.tone}`} />
+        {props.label}
+      </span>
+      <span class="tile-value">{props.value}</span>
+      <span class="tile-detail">{props.detail}</span>
+    </a>
+  );
+}
+
+// The four things to know at a glance; each tile jumps to the card that changes it.
+function StatusTiles(props: {
+  signedIn: SignedIn;
+  accounts: readonly AccountListItem[];
+  pendingCount: number;
+}) {
+  const { user } = props.signedIn;
+  const presentAccounts = props.accounts.filter((account) => account.present);
+  const allowedCount = presentAccounts.filter((account) => account.allowed).length;
+  const isPaper = user.mode === 'paper';
+  return (
+    <div class="tiles">
+      <StatusTile
+        href="#mode"
+        label="Mode"
+        value={isPaper ? 'Paper' : 'Live'}
+        detail={isPaper ? 'Simulated, no real orders' : 'Approved orders go to your broker'}
+        tone={isPaper ? 'ok' : 'bad'}
+      />
+      <StatusTile
+        href="#kill-switch"
+        label="Kill switch"
+        value={user.killSwitch ? 'On' : 'Off'}
+        detail={user.killSwitch ? 'Every new order is refused' : 'The AI can propose orders'}
+        tone={user.killSwitch ? 'bad' : 'ok'}
+      />
+      <StatusTile
+        href="#accounts"
+        label="Allowed accounts"
+        value={`${allowedCount} of ${presentAccounts.length}`}
+        detail={allowedCount === 0 ? 'Allow one so the AI can use it' : 'The AI sees only these'}
+        tone={allowedCount === 0 ? 'warn' : 'ok'}
+      />
+      <StatusTile
+        href="#pending"
+        label="Waiting for you"
+        value={String(props.pendingCount)}
+        detail={props.pendingCount === 0 ? 'Nothing to approve' : 'Review before they expire'}
+        tone={props.pendingCount === 0 ? 'neutral' : 'warn'}
+      />
+    </div>
+  );
+}
+
 export function DashboardPage(props: DashboardProps) {
   const { signedIn } = props;
   const csrfToken = signedIn.session.csrfToken;
@@ -360,50 +524,29 @@ export function DashboardPage(props: DashboardProps) {
           may use it.
         </div>
       ) : null}
-      <section>
-        <h2>Accounts</h2>
-        <p>
-          No account is allowed by default. The AI can only see and propose orders for accounts you
-          allow here.
-        </p>
-        <AccountsTable accounts={props.accounts} csrfToken={csrfToken} />
-        <form method="post" action="/accounts/refresh">
-          <CsrfField token={csrfToken} />
-          <button type="submit" class="secondary">
-            Refresh from SnapTrade
-          </button>
-        </form>
-      </section>
+      <StatusTiles
+        signedIn={signedIn}
+        accounts={props.accounts}
+        pendingCount={props.pendingIntents.length}
+      />
+      <AccountsSection accounts={props.accounts} csrfToken={csrfToken} />
       <PendingApprovals intents={props.pendingIntents} />
       <ManualProposal accounts={props.accounts} csrfToken={csrfToken} />
       <PaperPositions positions={props.paperPositions} />
-      <KillSwitch
-        isOn={signedIn.user.killSwitch}
-        ordersAtBroker={props.ordersAtBroker}
-        csrfToken={csrfToken}
-      />
-      <ModeSwitch
-        mode={signedIn.user.mode}
-        liveModeProblems={props.liveModeProblems}
-        csrfToken={csrfToken}
-      />
+      <div class="card-grid">
+        <KillSwitch
+          isOn={signedIn.user.killSwitch}
+          ordersAtBroker={props.ordersAtBroker}
+          csrfToken={csrfToken}
+        />
+        <ModeSwitch
+          mode={signedIn.user.mode}
+          liveModeProblems={props.liveModeProblems}
+          csrfToken={csrfToken}
+        />
+      </div>
       <McpBox mcpUrl={props.mcpUrl} />
-      <section class="box">
-        <h2>Disconnect SnapTrade</h2>
-        <p>
-          Revokes our access at SnapTrade, cuts off every connected AI app, and signs you out. Your
-          history stays; you can sign in again later.
-        </p>
-        <form method="post" action="/disconnect">
-          <CsrfField token={csrfToken} />
-          <button type="submit" class="danger">
-            Disconnect SnapTrade
-          </button>
-        </form>
-        <p>
-          Or <a href="/account/delete">delete your account</a> and everything we store.
-        </p>
-      </section>
+      <DisconnectBox csrfToken={csrfToken} />
       <p class="notice">Not financial advice. Guardrail Gateway never recommends trades.</p>
     </Layout>
   );
