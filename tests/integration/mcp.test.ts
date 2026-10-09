@@ -358,6 +358,57 @@ describe('proposing through MCP', () => {
   });
 });
 
+describe('the claim check through MCP', () => {
+  it('corrects the AI when its expected price differs from the broker price', async () => {
+    const proposed = await proposeXeqt({
+      reasoning: { expected_price: 50, company_name: 'iShares Core Equity', why: 'Diversified.' },
+    });
+    const status = await callTool(client, 'get_order_status', {
+      intent_id: intentIdOf(proposed),
+    });
+
+    const priceClaim = {
+      claim: 'price',
+      status: 'differs',
+      ai_said: '50',
+      broker_says: '32.1',
+      message:
+        "The AI expected about $50.00 CAD a share, but your broker's latest price is $32.10 CAD (36% lower).",
+    };
+    expect(proposed.structuredContent).toMatchObject({
+      status: 'PENDING_APPROVAL',
+      claim_check: [priceClaim, { claim: 'company', status: 'matches' }],
+    });
+    expect(textOf(proposed)).toContain(`Claim check: ${priceClaim.message}`);
+    expect(status.structuredContent).toMatchObject({
+      claim_check: [priceClaim, { claim: 'company' }],
+    });
+  });
+
+  it('tells the AI it gave no reasons when it sent none', async () => {
+    const proposed = await proposeXeqt();
+
+    expect(proposed.structuredContent).toMatchObject({
+      claim_check: [
+        {
+          claim: 'reasoning',
+          status: 'missing',
+          ai_said: null,
+          broker_says: null,
+          message: 'The AI gave no reasons for this order.',
+        },
+      ],
+    });
+  });
+
+  it('rejects a source that is not an http or https web page', async () => {
+    const result = await proposeXeqt({ reasoning: { sources: ['javascript:alert(1)'] } });
+
+    expect(result.isError).toBe(true);
+    expect(await countIntents(testApp)).toBe(0);
+  });
+});
+
 describe('the 2026-07-28 protocol revision', () => {
   it('serves a modern stateless client the same tools and results', async () => {
     const modern = await connectModernMcpClient(testApp, tokens.access_token);

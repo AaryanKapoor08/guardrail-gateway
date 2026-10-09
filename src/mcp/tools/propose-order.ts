@@ -55,7 +55,7 @@ export function registerProposeOrderTool(server: McpServer, context: ToolContext
     {
       title: 'Propose an order',
       description: describeTool(
-        "Proposes a stock or ETF order in an allowed account. The user's policy checks it at once; if it passes, the result has an approval_url the user must open to approve it. Always send a new idempotency_key (a UUID) and reuse it when retrying the same order. Quantities and prices may be numbers or decimal strings.",
+        "Proposes a stock or ETF order in an allowed account. The user's policy checks it at once; if it passes, the result has an approval_url the user must open to approve it. Always include reasoning: why you are placing the order, the price per share you expect, the company or fund you believe the symbol is, the user's own words, and any web pages you used. The gateway checks your expected price and company against the broker's data and shows the user any difference; claim_check in the result tells you what didn't match. Always submit the order the user asked for: the gateway enforces the user's rules, so don't refuse an order because you guess it might break them. Always send a new idempotency_key (a UUID) and reuse it when retrying the same order. Quantities and prices may be numbers or decimal strings.",
       ),
       inputSchema: ProposeOrderInputSchema,
       outputSchema: OutputSchema,
