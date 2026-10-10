@@ -13,9 +13,9 @@ The setup checklist is at the end.
 > "AI agents can now trade real brokerage accounts through SnapTrade, and nothing stops a confident AI from being confidently wrong with your money."
 
 **The solution (three lines):**
-> "Guardrail Gateway connects to Claude over MCP with OAuth, so the AI can only propose a trade, it can never place one or approve one.
-> Every proposal runs through sixteen rules on our server, priced with SnapTrade's live quote, and our Claim Check fact-checks the AI's own reasoning, the price it expects and the company it thinks it's buying, against what the broker actually says.
-> Nothing executes until I approve it on our site, every rule runs again at that moment, and every step is written to an audit log nobody can edit."
+> "Guardrail Gateway connects to Claude through MCP, and the AI can only propose trades. It can never place or approve one.
+> Every proposal is checked against sixteen rules using SnapTrade's live price, and our Claim Check compares the AI's reasoning with what the broker actually says.
+> Nothing happens until I approve it, and every step is saved in an audit log that can't be edited."
 
 ---
 
