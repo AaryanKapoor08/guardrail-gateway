@@ -26,6 +26,8 @@ type LayoutProps = {
   readonly activePage?: ActivePage | undefined;
   // Shown as a badge on the bell. Only pages that already loaded the count pass it.
   readonly waitingCount?: number | undefined;
+  // "site" shows the public site's navigation even when signed in (the home page).
+  readonly frame?: 'app' | 'site' | undefined;
   readonly children?: Child;
 };
 
@@ -234,18 +236,81 @@ function SignedInTopbar(props: { signedIn: SignedIn; waitingCount: number | unde
   );
 }
 
-function SignedOutTopbar() {
+// The public site's navigation: product links in the middle, the two ways in on the right.
+function SiteNav(props: { signedIn: SignedIn | undefined }) {
   return (
-    <header class="topbar">
-      <div class="topbar-start">
+    <header class="site-nav">
+      <div class="site-nav-inner">
         <Brand />
-      </div>
-      <div class="topbar-end">
-        <a href="/signin" class="button">
-          Sign in
-        </a>
+        <nav class="site-links" aria-label="Site">
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#safety">Safety</a>
+          <a href="/privacy">Privacy</a>
+        </nav>
+        <div class="site-actions">
+          {props.signedIn === undefined ? (
+            <>
+              <a href="/signin" class="button secondary">
+                Sign in
+              </a>
+              <form method="post" action="/demo/start" class="inline">
+                <button type="submit">Try the demo</button>
+              </form>
+            </>
+          ) : (
+            <a href="/dashboard" class="button">
+              Dashboard
+            </a>
+          )}
+        </div>
       </div>
     </header>
+  );
+}
+
+function SiteFooter() {
+  return (
+    <footer class="site-footer">
+      <div class="site-footer-top">
+        <div>
+          <Brand />
+          <p class="site-footer-tagline">
+            A safety layer between AI assistants and SnapTrade-connected brokerage accounts.
+          </p>
+        </div>
+        <nav class="site-footer-links" aria-label="Footer">
+          <div>
+            <p class="site-footer-heading">Product</p>
+            <a href="/#how-it-works">How it works</a>
+            <a href="/#safety">Safety</a>
+            <a href="/signin">Sign in</a>
+          </div>
+          <div>
+            <p class="site-footer-heading">Legal</p>
+            <a href="/privacy">Privacy</a>
+          </div>
+        </nav>
+      </div>
+      <div class="site-footer-bottom">
+        <p>Not financial advice. Guardrail Gateway never recommends trades.</p>
+        <p>
+          Built on <a href="https://snaptrade.com">SnapTrade</a>
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+// Public pages sit in one framed column with thin rails on both sides.
+function SiteFrame(props: LayoutProps) {
+  return (
+    <div class="site">
+      <SiteNav signedIn={props.signedIn} />
+      <div class="site-frame">
+        <main class="site-main">{props.children}</main>
+        <SiteFooter />
+      </div>
+    </div>
   );
 }
 
@@ -270,7 +335,7 @@ function TopBanners(props: { signedIn: SignedIn | undefined }) {
 
 function Footer() {
   return (
-    <footer>
+    <footer class="app-footer">
       <p>Not financial advice. Guardrail Gateway never recommends trades.</p>
       <p>
         Built on <a href="https://snaptrade.com">SnapTrade</a> · <a href="/privacy">Privacy</a>
@@ -296,7 +361,7 @@ function Shell(props: LayoutProps & { signedIn: SignedIn }) {
   );
 }
 
-// Every page: the same top bar, the sidebar once signed in, the same "not financial advice"
+// Every page: the public site frame when signed out, the app's top bar and sidebar once signed in, the same "not financial advice"
 // footer, and no client-side JavaScript at all (the CSP forbids scripts anyway).
 export function Layout(props: LayoutProps) {
   return (
@@ -308,14 +373,8 @@ export function Layout(props: LayoutProps) {
         <link rel="stylesheet" href="/static/styles.css" />
       </head>
       <body>
-        {props.signedIn === undefined ? (
-          <>
-            <SignedOutTopbar />
-            <main class="main public">
-              {props.children}
-              <Footer />
-            </main>
-          </>
+        {props.signedIn === undefined || props.frame === 'site' ? (
+          <SiteFrame {...props} />
         ) : (
           <Shell {...props} signedIn={props.signedIn} />
         )}
