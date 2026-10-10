@@ -7,7 +7,7 @@ The setup checklist is at the end.
 
 ## 1 · Home page · 0:00–0:25
 
-*Scroll slowly through the four cards while you talk.*
+*Start on the hero ("AI can propose the trade. Only you can approve it."), then scroll slowly down through the dark Claim Check card and "How it works" while you talk.*
 
 **The problem (one line):**
 > "AI agents can now trade real brokerage accounts through SnapTrade, and nothing stops a confident AI from being confidently wrong with your money."
@@ -21,7 +21,7 @@ The setup checklist is at the end.
 
 ## 2 · The site · 0:25–0:55
 
-*Click each page in the top bar, then say its line.*
+*Click each page in the left sidebar, then say its line.*
 
 **Dashboard**
 > "I sign in with my SnapTrade account, and here I can see I'm in practice mode, my emergency stop is off, and Claude can only see the one account I've allowed."
@@ -75,7 +75,7 @@ Research how Apple's stock is doing this week and look at my Individual account,
 
 ## 4 · Close · 1:40–1:45
 
-*Click Guardrail Gateway (top left) to go back to the home page.*
+*Click the Guardrail Gateway logo (top left) to go back to the home page.*
 
 > "SnapTrade lets AI reach your brokerage, and Guardrail Gateway makes sure you're always the one in control."
 
