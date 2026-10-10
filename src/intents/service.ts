@@ -25,10 +25,15 @@ import {
   type ProposeOrderInput,
   ProposeOrderInputSchema,
 } from './propose-input.js';
-import type { IntentState } from './state-machine.js';
 import { type ResolvedSecurity, resolveSymbol } from './symbols.js';
 import { applyTransition } from './transitions.js';
-import { approvalUrlFor, type IntentView, listIntentViews, requireIntentView } from './view.js';
+import {
+  approvalUrlFor,
+  type IntentListOptions,
+  type IntentView,
+  listIntentViews,
+  requireIntentView,
+} from './view.js';
 
 // Proposing orders and reading intents (PRODUCT_VISION §4.3, §7, §8). Every change is one
 // transaction: user row lock → transition() + guarded UPDATE + audit row. Network reads (symbol
@@ -72,7 +77,7 @@ export async function getIntent(deps: Deps, userId: string, intentId: string): P
 export async function listRecentIntents(
   deps: Deps,
   userId: string,
-  options: { limit: number; statuses?: readonly IntentState[] },
+  options: IntentListOptions,
 ): Promise<IntentView[]> {
   return deps.db.transaction(async (tx) => {
     await lockExistingUser(tx, userId);

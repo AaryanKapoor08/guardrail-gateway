@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, type SQL } from 'drizzle-orm';
+import { and, desc, eq, inArray, like, ne, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 import { type ClaimResult, ClaimResultSchema } from '../claims/check-claims.js';
 import type { DatabaseExecutor } from '../db/client.js';
@@ -155,16 +155,36 @@ export async function loadIntentView(
   return view ?? null;
 }
 
+export type IntentListOptions = {
+  readonly limit: number;
+  readonly statuses?: readonly IntentState[];
+  // Only symbols starting with this text, e.g. "XEQT" finds "XEQT.TO".
+  readonly symbolPrefix?: string;
+};
+
+// LIKE treats % and _ as wildcards; escaped, they only match themselves.
+function startsWithPattern(prefix: string): string {
+  return `${prefix.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
+}
+
 export function listIntentViews(
   db: DatabaseExecutor,
   userId: string,
-  options: { limit: number; statuses?: readonly IntentState[] },
+  options: IntentListOptions,
 ): Promise<IntentView[]> {
   const statusFilter =
     options.statuses === undefined
       ? undefined
       : inArray(orderIntents.status, [...options.statuses]);
-  return selectViews(db, and(eq(orderIntents.userId, userId), statusFilter), options.limit);
+  const symbolFilter =
+    options.symbolPrefix === undefined
+      ? undefined
+      : like(orderIntents.symbol, startsWithPattern(options.symbolPrefix));
+  return selectViews(
+    db,
+    and(eq(orderIntents.userId, userId), statusFilter, symbolFilter),
+    options.limit,
+  );
 }
 
 export function approvalUrlFor(appBaseUrl: string, intentId: string): string {
