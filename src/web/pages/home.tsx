@@ -4,7 +4,7 @@ import { SignInChoices } from '../../demo/pages.js';
 import { LockIcon, PowerIcon, ShieldIcon } from '../components/icons.js';
 import { Layout } from '../layout.js';
 
-// The landing page. The product card and audit rows are illustrations of the real flow (the
+// The landing page. The order-flow card and audit rows are illustrations of the real flow (the
 // same wording the app shows), not live data.
 
 function StartButtons(props: { signedIn: SignedIn | undefined }) {
@@ -23,36 +23,56 @@ function Eyebrow(props: { children: Child }) {
   return <p class="kicker">{props.children}</p>;
 }
 
-// A still picture of the approval page: what the human sees when the AI is wrong about the price.
-function ApprovalPreview() {
+function FlowStep(props: {
+  number: string;
+  title: string;
+  tone?: 'flag' | 'done';
+  children: Child;
+}) {
+  const toneClass = props.tone === undefined ? '' : ` is-${props.tone}`;
   return (
-    <figure class="product-card">
-      <div class="product-head">
-        <span class="product-label">Approval needed</span>
-        <span class="product-badge">Paper</span>
+    <li class={`flow-step${toneClass}`}>
+      <span class="flow-marker">{props.number}</span>
+      <div>
+        <p class="flow-title">{props.title}</p>
+        {props.children}
       </div>
-      <p class="product-order">Buy 1 AAPL</p>
-      <p class="product-meta">Proposed by claude.ai · Individual ••••0001</p>
-      <div class="product-alert">The AI's reasoning doesn't match your broker's data.</div>
-      <ul class="product-rows">
-        <li class="differs">
-          <span>Price</span>
-          <span>AI expected $330.00 · broker $180.50</span>
-        </li>
-        <li>
-          <span>Company</span>
-          <span>Apple Inc. · matches</span>
-        </li>
-        <li>
-          <span>Your rules</span>
-          <span>16 of 16 passed</span>
-        </li>
-      </ul>
-      <div class="product-actions">
-        <span class="yes">Approve</span>
-        <span class="no">Deny</span>
+    </li>
+  );
+}
+
+// One order going through the gateway, lit up step by step by a CSS loop (no JavaScript).
+function OrderFlowPreview() {
+  return (
+    <figure class="flow-card">
+      <div class="flow-head">
+        <span class="flow-live">
+          <span class="flow-dot" />
+          One order, start to finish
+        </span>
+        <span class="flow-badge">Paper</span>
       </div>
-      <figcaption>Illustration of the approval page</figcaption>
+      <ol class="flow-steps">
+        <FlowStep number="1" title="Claude proposes">
+          <p class="flow-detail">"Buy 1 AAPL in my Individual account"</p>
+        </FlowStep>
+        <FlowStep number="2" title="Your rules check it">
+          <div class="flow-bar">
+            <span />
+          </div>
+          <p class="flow-detail">16 of 16 rules passed, priced with SnapTrade's quote</p>
+        </FlowStep>
+        <FlowStep number="3" title="Claim Check flags it" tone="flag">
+          <p class="flow-detail">AI expected $330.00 · broker says $180.50</p>
+        </FlowStep>
+        <FlowStep number="4" title="You decide">
+          <span class="flow-approve">Approve</span>
+        </FlowStep>
+        <FlowStep number="5" title="Filled" tone="done">
+          <p class="flow-detail">1 AAPL at $180.50 · paper, no real money</p>
+        </FlowStep>
+      </ol>
+      <figcaption>An illustration of the real flow, on a loop.</figcaption>
     </figure>
   );
 }
@@ -75,7 +95,7 @@ function Hero(props: { signedIn: SignedIn | undefined }) {
           16 server-side rules · Paper trading by default · Append-only audit log
         </p>
       </div>
-      <ApprovalPreview />
+      <OrderFlowPreview />
     </section>
   );
 }
