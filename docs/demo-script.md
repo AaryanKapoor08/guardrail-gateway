@@ -7,7 +7,7 @@ The setup checklist is at the end.
 
 ## 1 · Home page · 0:00–0:25
 
-*Start on the hero ("AI can propose the trade. Only you can approve it."), then scroll slowly down through the dark Claim Check card and "How it works" while you talk.*
+*Start on the hero ("AI can propose the trade. Only you can approve it."), then scroll slowly down to "How it works" while you talk.*
 
 **The problem (one line):**
 > "AI agents can now trade real brokerage accounts through SnapTrade, and nothing stops a confident AI from being confidently wrong with your money."
