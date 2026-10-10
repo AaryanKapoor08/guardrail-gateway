@@ -231,7 +231,7 @@ function FixedRules() {
 
 export function PolicyPage(props: PolicyPageProps) {
   return (
-    <Layout title="Policy" signedIn={props.signedIn}>
+    <Layout title="Policy" signedIn={props.signedIn} activePage="policy">
       <div class="page-head">
         <p class="eyebrow">Policy</p>
         <h1>Your trading policy</h1>

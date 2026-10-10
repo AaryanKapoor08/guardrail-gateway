@@ -282,7 +282,7 @@ export function ApprovalPage(props: ApprovalPageProps) {
   const { intent, signedIn } = props;
   const isPending = intent.status === 'PENDING_APPROVAL';
   return (
-    <Layout title="Review order" signedIn={signedIn}>
+    <Layout title="Review order" signedIn={signedIn} activePage="orders">
       <div class="page-head">
         <p class="eyebrow">{isPending ? 'Approval needed' : statusLabel(intent.status)}</p>
         <h1>

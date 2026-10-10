@@ -288,11 +288,48 @@ describe('dashboard and history', () => {
     await approve(filledId);
 
     const html = await (await getPage(testApp, '/dashboard', user.cookie)).text();
+    const pendingSection = html.slice(html.indexOf('id="pending"'), html.indexOf('id="accounts"'));
 
-    expect(html).toContain(`href="/approvals/${pendingId}"`);
-    expect(html).not.toContain(`href="/approvals/${filledId}"`);
+    expect(pendingSection).toContain(`href="/approvals/${pendingId}"`);
+    expect(pendingSection).not.toContain(`href="/approvals/${filledId}"`);
     expect(html).toContain('Paper positions (simulated)');
     expect(html).toContain('SHOP.TO');
+  });
+
+  it('shows the latest orders in any state and the last 14 days of activity', async () => {
+    const pendingId = await proposePending();
+    const filledId = await proposePending({ symbol: 'SHOP.TO' });
+    await approve(filledId);
+
+    const html = await (await getPage(testApp, '/dashboard', user.cookie)).text();
+    const recentOrders = html.slice(html.indexOf('Recent orders'), html.indexOf('id="pending"'));
+
+    expect(recentOrders).toContain(`href="/approvals/${pendingId}"`);
+    expect(recentOrders).toContain(`href="/approvals/${filledId}"`);
+    expect(recentOrders).toContain('Filled');
+    expect(html).toContain('Orders in the last 14 days');
+    expect(html).toContain('2 proposed · 1 approved');
+    expect(html).toContain('Outcomes by weekday');
+  });
+
+  it('finds orders by the start of their symbol from the search box', async () => {
+    const shopId = await proposePending({ symbol: 'SHOP.TO' });
+    const xeqtId = await proposePending();
+
+    const page = await (await getPage(testApp, '/intents?symbol=shop', user.cookie)).text();
+
+    expect(page).toContain('Showing orders for symbols starting with SHOP.');
+    expect(page).toContain(`href="/approvals/${shopId}"`);
+    expect(page).not.toContain(`href="/approvals/${xeqtId}"`);
+  });
+
+  it('shows every order when the search is not a symbol', async () => {
+    const intentId = await proposePending();
+
+    const page = await (await getPage(testApp, '/intents?symbol=%25%27', user.cookie)).text();
+
+    expect(page).toContain('Showing every order instead.');
+    expect(page).toContain(`href="/approvals/${intentId}"`);
   });
 
   it('shows recent orders and lets the user cancel a pending one', async () => {

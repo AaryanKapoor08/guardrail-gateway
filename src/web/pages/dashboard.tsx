@@ -2,11 +2,14 @@ import type { AccountListItem } from '../../accounts/service.js';
 import { CsrfField } from '../../auth/csrf.js';
 import type { SignedIn } from '../../auth/sessions.js';
 import type { PaperPosition } from '../../executors/paper.js';
+import type { ActivitySummary } from '../../intents/activity.js';
 import type { IntentView } from '../../intents/view.js';
 import { fmtMoney } from '../../lib/money.js';
 import { fmtToronto } from '../../lib/time.js';
+import { PlusCircleIcon, PowerIcon } from '../components/icons.js';
 import { orderTypeLabel, sideLabel } from '../format.js';
 import { Layout } from '../layout.js';
+import { Overview, StatCards } from './dashboard-overview.js';
 
 // Why the account list may be out of date on this page load.
 export type SyncProblem = 'needs-reauth' | 'unavailable' | null;
@@ -23,6 +26,10 @@ type DashboardProps = {
   // Why live mode can't be switched on right now (empty when it can).
   readonly liveModeProblems: readonly string[];
   readonly newAccounts: readonly AccountListItem[];
+  readonly activity: ActivitySummary;
+  readonly activityDays: number;
+  // The latest few orders in any state, for the "Recent orders" card.
+  readonly recentIntents: readonly IntentView[];
 };
 
 function KillSwitch(props: {
@@ -162,7 +169,7 @@ function AccountsTable(props: { accounts: readonly AccountListItem[]; csrfToken:
     );
   }
   return (
-    <table>
+    <table class="data-table">
       <thead>
         <tr>
           <th>Institution</th>
@@ -206,28 +213,6 @@ function AccountsTable(props: { accounts: readonly AccountListItem[]; csrfToken:
         ))}
       </tbody>
     </table>
-  );
-}
-
-function McpBox(props: { mcpUrl: string }) {
-  return (
-    <section class="box">
-      <h2>Connect an AI assistant</h2>
-      <p>
-        Connector URL: <code>{props.mcpUrl}</code>
-      </p>
-      <p>
-        <strong>Claude (web or desktop):</strong> Settings → Connectors → Add custom connector →
-        paste the URL above → sign in and approve.
-      </p>
-      <p>
-        <strong>Claude Code:</strong>{' '}
-        <code>{`claude mcp add --transport http guardrail ${props.mcpUrl}`}</code>
-      </p>
-      <p>
-        <a href="/apps">Connected AI apps</a> (see and disconnect apps)
-      </p>
-    </section>
   );
 }
 
@@ -316,7 +301,7 @@ function PendingRow(props: { intent: IntentView }) {
 
 function PendingApprovals(props: { intents: readonly IntentView[] }) {
   return (
-    <section id="pending">
+    <section class="box" id="pending">
       <div class="section-title">
         <h2>Pending approvals</h2>
         <a href="/intents" class="button secondary small">
@@ -349,13 +334,13 @@ function PaperPositions(props: { positions: readonly PaperPosition[] }) {
     return null;
   }
   return (
-    <section>
+    <section class="box">
       <h2>Paper positions (simulated)</h2>
       <p class="notice">
         Changes from approved paper orders. Nothing here is held at a real broker. A negative
         quantity is a simulated sale of shares you hold for real.
       </p>
-      <table>
+      <table class="data-table">
         <thead>
           <tr>
             <th>Account</th>
@@ -381,7 +366,7 @@ function PaperPositions(props: { positions: readonly PaperPosition[] }) {
 
 function AccountsSection(props: { accounts: readonly AccountListItem[]; csrfToken: string }) {
   return (
-    <section id="accounts">
+    <section class="box" id="accounts">
       <div class="section-title">
         <div>
           <h2>Accounts</h2>
@@ -424,87 +409,51 @@ function DisconnectBox(props: { csrfToken: string }) {
   );
 }
 
-type Tone = 'ok' | 'warn' | 'bad' | 'neutral';
-
-function StatusTile(props: {
-  href: string;
-  label: string;
-  value: string;
-  detail: string;
-  tone: Tone;
-}) {
+// The header's quick emergency stop: the same form as the kill switch card below.
+function KillSwitchButton(props: { isOn: boolean; csrfToken: string }) {
   return (
-    <a href={props.href} class={`tile ${props.tone}`}>
-      <span class="tile-label">
-        <span class={`dot ${props.tone}`} />
-        {props.label}
-      </span>
-      <span class="tile-value">{props.value}</span>
-      <span class="tile-detail">{props.detail}</span>
-    </a>
+    <form method="post" action="/kill-switch" class="inline">
+      <CsrfField token={props.csrfToken} />
+      <input type="hidden" name="state" value={props.isOn ? 'off' : 'on'} />
+      <button type="submit">
+        <PowerIcon />
+        {props.isOn ? 'Turn the kill switch off' : 'Turn the kill switch on'}
+      </button>
+    </form>
   );
 }
 
-// The four things to know at a glance; each tile jumps to the card that changes it.
-function StatusTiles(props: {
-  signedIn: SignedIn;
-  accounts: readonly AccountListItem[];
-  pendingCount: number;
-}) {
+function DashboardHeader(props: { signedIn: SignedIn }) {
   const { user } = props.signedIn;
-  const presentAccounts = props.accounts.filter((account) => account.present);
-  const allowedCount = presentAccounts.filter((account) => account.allowed).length;
-  const isPaper = user.mode === 'paper';
   return (
-    <div class="tiles">
-      <StatusTile
-        href="#mode"
-        label="Mode"
-        value={isPaper ? 'Paper' : 'Live'}
-        detail={isPaper ? 'Simulated, no real orders' : 'Approved orders go to your broker'}
-        tone={isPaper ? 'ok' : 'bad'}
-      />
-      <StatusTile
-        href="#kill-switch"
-        label="Kill switch"
-        value={user.killSwitch ? 'On' : 'Off'}
-        detail={user.killSwitch ? 'Every new order is refused' : 'The AI can propose orders'}
-        tone={user.killSwitch ? 'bad' : 'ok'}
-      />
-      <StatusTile
-        href="#accounts"
-        label="Allowed accounts"
-        value={`${allowedCount} of ${presentAccounts.length}`}
-        detail={allowedCount === 0 ? 'Allow one so the AI can use it' : 'The AI sees only these'}
-        tone={allowedCount === 0 ? 'warn' : 'ok'}
-      />
-      <StatusTile
-        href="#pending"
-        label="Waiting for you"
-        value={String(props.pendingCount)}
-        detail={props.pendingCount === 0 ? 'Nothing to approve' : 'Review before they expire'}
-        tone={props.pendingCount === 0 ? 'neutral' : 'warn'}
-      />
+    <div class="page-title-row">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="lead">Signed in{user.email === null ? '' : ` as ${user.email}`}.</p>
+      </div>
+      <div class="page-actions">
+        <a href="#try" class="button secondary">
+          <PlusCircleIcon />
+          Propose an order
+        </a>
+        <KillSwitchButton isOn={user.killSwitch} csrfToken={props.signedIn.session.csrfToken} />
+      </div>
     </div>
   );
 }
 
-export function DashboardPage(props: DashboardProps) {
-  const { signedIn } = props;
-  const csrfToken = signedIn.session.csrfToken;
-  const email = signedIn.user.email;
+function SyncBanners(props: {
+  accounts: readonly AccountListItem[];
+  syncProblem: SyncProblem;
+  needsReauth: boolean;
+  newAccounts: readonly AccountListItem[];
+}) {
   const hasBrokenConnection = props.accounts.some(
     (account) => account.present && account.connectionDisabled,
   );
-  const needsReauth = signedIn.user.needsReauth || props.syncProblem === 'needs-reauth';
   return (
-    <Layout title="Dashboard" signedIn={signedIn}>
-      <div class="page-head">
-        <p class="eyebrow">Dashboard</p>
-        <h1>Your guardrails</h1>
-        <p class="lead">Signed in{email === null ? '' : ` as ${email}`}.</p>
-      </div>
-      {needsReauth ? <ReconnectBanner /> : null}
+    <>
+      {props.needsReauth ? <ReconnectBanner /> : null}
       {props.syncProblem === 'unavailable' ? (
         <div class="banner">
           We couldn't reach SnapTrade just now, so this list may be out of date. Try Refresh in a
@@ -524,13 +473,40 @@ export function DashboardPage(props: DashboardProps) {
           may use it.
         </div>
       ) : null}
-      <StatusTiles
+    </>
+  );
+}
+
+export function DashboardPage(props: DashboardProps) {
+  const { signedIn } = props;
+  const csrfToken = signedIn.session.csrfToken;
+  return (
+    <Layout
+      title="Dashboard"
+      signedIn={signedIn}
+      activePage="dashboard"
+      waitingCount={props.pendingIntents.length}
+    >
+      <DashboardHeader signedIn={signedIn} />
+      <SyncBanners
+        accounts={props.accounts}
+        syncProblem={props.syncProblem}
+        needsReauth={signedIn.user.needsReauth || props.syncProblem === 'needs-reauth'}
+        newAccounts={props.newAccounts}
+      />
+      <StatCards
         signedIn={signedIn}
         accounts={props.accounts}
-        pendingCount={props.pendingIntents.length}
+        pendingIntents={props.pendingIntents}
       />
-      <AccountsSection accounts={props.accounts} csrfToken={csrfToken} />
+      <Overview
+        activity={props.activity}
+        activityDays={props.activityDays}
+        recentIntents={props.recentIntents}
+        mcpUrl={props.mcpUrl}
+      />
       <PendingApprovals intents={props.pendingIntents} />
+      <AccountsSection accounts={props.accounts} csrfToken={csrfToken} />
       <ManualProposal accounts={props.accounts} csrfToken={csrfToken} />
       <PaperPositions positions={props.paperPositions} />
       <div class="card-grid">
@@ -545,9 +521,7 @@ export function DashboardPage(props: DashboardProps) {
           csrfToken={csrfToken}
         />
       </div>
-      <McpBox mcpUrl={props.mcpUrl} />
       <DisconnectBox csrfToken={csrfToken} />
-      <p class="notice">Not financial advice. Guardrail Gateway never recommends trades.</p>
     </Layout>
   );
 }

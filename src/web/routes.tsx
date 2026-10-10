@@ -6,6 +6,7 @@ import { disconnectUser } from '../auth/disconnect.js';
 import { destroySession, loadSession, requireSession, type SignedInEnv } from '../auth/sessions.js';
 import type { Deps } from '../deps.js';
 import { listPaperPositions } from '../executors/paper.js';
+import { activityWindowStart, listOrderActivity, summarizeActivity } from '../intents/activity.js';
 import { grantHasTradeScope } from '../intents/context.js';
 import { liveModeProblems } from '../intents/controls.js';
 import { cancelIntent } from '../intents/decisions.js';
@@ -17,7 +18,7 @@ import { AppsPage } from './pages/apps.js';
 import { DashboardPage, type SyncProblem } from './pages/dashboard.js';
 import { ErrorPage } from './pages/error.js';
 import { HomePage } from './pages/home.js';
-import { IntentsPage } from './pages/intents.js';
+import { IntentsPage, type OrderSearch } from './pages/intents.js';
 import { renderPage } from './render.js';
 
 const AllowFormSchema = z.object({ allowed: z.enum(['true', 'false']) });
@@ -36,17 +37,28 @@ async function syncForPageLoad(deps: Deps, userId: string): Promise<SyncProblem>
   }
 }
 
+const ACTIVITY_DAYS = 14;
+const RECENT_ORDERS_LIMIT = 5;
+
 async function showDashboard(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
   const { session, user } = c.var;
   const syncProblem = await syncForPageLoad(deps, user.id);
-  const [accounts, pendingIntents, paperPositions, ordersAtBroker, hasTradeScope] =
+  const [accounts, pendingIntents, paperPositions, ordersAtBroker, hasTradeScope, recentIntents] =
     await Promise.all([
       listUserAccounts(deps, user.id),
       listRecentIntents(deps, user.id, { limit: 20, statuses: ['PENDING_APPROVAL'] }),
       listPaperPositions(deps.db, user.id),
       listRecentIntents(deps, user.id, { limit: 20, statuses: ['SUBMITTED', 'UNKNOWN'] }),
       grantHasTradeScope(deps.db, user.id),
+      listRecentIntents(deps, user.id, { limit: RECENT_ORDERS_LIMIT }),
     ]);
+  // After the reads above, which expire overdue orders first, so the charts count them as expired.
+  const now = deps.now();
+  const activityRows = await listOrderActivity(
+    deps.db,
+    user.id,
+    activityWindowStart(now, ACTIVITY_DAYS),
+  );
   return renderPage(
     c,
     <DashboardPage
@@ -58,7 +70,10 @@ async function showDashboard(deps: Deps, c: Context<SignedInEnv>): Promise<Respo
       paperPositions={paperPositions}
       ordersAtBroker={ordersAtBroker}
       liveModeProblems={liveModeProblems(deps, user, hasTradeScope)}
-      newAccounts={newlyFoundAccounts(accounts, deps.now())}
+      newAccounts={newlyFoundAccounts(accounts, now)}
+      activity={summarizeActivity(activityRows, { now, days: ACTIVITY_DAYS })}
+      activityDays={ACTIVITY_DAYS}
+      recentIntents={recentIntents}
     />,
   );
 }
@@ -129,10 +144,32 @@ async function disconnect(deps: Deps, c: Context<SignedInEnv>): Promise<Response
 
 const INTENT_HISTORY_LIMIT = 50;
 
+// The top bar's search box: a symbol, or the start of one. Anything else shows every order.
+const SymbolSearchSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z0-9.-]{1,20}$/);
+
+function orderSearchFrom(query: string | undefined): OrderSearch {
+  if (query === undefined || query.trim() === '') {
+    return { kind: 'all' };
+  }
+  const symbol = SymbolSearchSchema.safeParse(query);
+  return symbol.success ? { kind: 'symbol', prefix: symbol.data } : { kind: 'invalid' };
+}
+
 async function showIntents(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {
   const { session, user } = c.var;
-  const intents = await listRecentIntents(deps, user.id, { limit: INTENT_HISTORY_LIMIT });
-  return renderPage(c, <IntentsPage signedIn={{ session, user }} intents={intents} />);
+  const search = orderSearchFrom(c.req.query('symbol'));
+  const intents = await listRecentIntents(deps, user.id, {
+    limit: INTENT_HISTORY_LIMIT,
+    ...(search.kind === 'symbol' ? { symbolPrefix: search.prefix } : {}),
+  });
+  return renderPage(
+    c,
+    <IntentsPage signedIn={{ session, user }} intents={intents} search={search} />,
+  );
 }
 
 async function cancelFromHistory(deps: Deps, c: Context<SignedInEnv>): Promise<Response> {

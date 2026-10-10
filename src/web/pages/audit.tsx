@@ -42,7 +42,7 @@ function AuditRow(props: { entry: AuditEntry }) {
 
 export function AuditPage(props: { signedIn: SignedIn; entries: readonly AuditEntry[] }) {
   return (
-    <Layout title="Audit log" signedIn={props.signedIn}>
+    <Layout title="Audit log" signedIn={props.signedIn} activePage="audit">
       <div class="page-head">
         <p class="eyebrow">History</p>
         <h1>Audit log</h1>
@@ -51,21 +51,25 @@ export function AuditPage(props: { signedIn: SignedIn; entries: readonly AuditEn
         The last {props.entries.length} events, newest first. The log can't be edited or deleted,
         except by deleting your whole account.
       </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Who</th>
-            <th>What</th>
-            <th>Details</th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.entries.map((entry) => (
-            <AuditRow entry={entry} />
-          ))}
-        </tbody>
-      </table>
+      <section class="box">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Who</th>
+                <th>What</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.entries.map((entry) => (
+                <AuditRow entry={entry} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </Layout>
   );
 }

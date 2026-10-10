@@ -135,7 +135,7 @@ type TryPageProps = {
 export function TryPage(props: TryPageProps) {
   const csrfToken = props.signedIn.session.csrfToken;
   return (
-    <Layout title="Guided demo" signedIn={props.signedIn}>
+    <Layout title="Guided demo" signedIn={props.signedIn} activePage="demo">
       <div class="page-head">
         <p class="eyebrow">Guided demo</p>
         <h1>See the guardrails in action</h1>
