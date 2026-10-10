@@ -985,6 +985,7 @@ td form.inline {
 }
 
 .flow-step {
+  --flow-shift: 6px;
   position: relative;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
@@ -1114,7 +1115,7 @@ td form.inline {
 @keyframes flow-step-1 {
   0% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 
   6%,
@@ -1126,7 +1127,7 @@ td form.inline {
   99%,
   100% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 }
 
@@ -1134,7 +1135,7 @@ td form.inline {
   0%,
   14% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 
   18%,
@@ -1146,7 +1147,7 @@ td form.inline {
   99%,
   100% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 }
 
@@ -1154,7 +1155,7 @@ td form.inline {
   0%,
   32% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 
   36%,
@@ -1166,7 +1167,7 @@ td form.inline {
   99%,
   100% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 }
 
@@ -1174,7 +1175,7 @@ td form.inline {
   0%,
   50% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 
   54%,
@@ -1186,7 +1187,7 @@ td form.inline {
   99%,
   100% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 }
 
@@ -1194,7 +1195,7 @@ td form.inline {
   0%,
   70% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 
   74%,
@@ -1206,7 +1207,7 @@ td form.inline {
   99%,
   100% {
     opacity: 0.35;
-    transform: translateY(6px);
+    transform: translateY(var(--flow-shift));
   }
 }
 
@@ -1246,16 +1247,15 @@ td form.inline {
   }
 }
 
+/* Reduced motion keeps the fade (it explains the flow) but drops the sliding and pulsing. */
 @media (prefers-reduced-motion: reduce) {
-  .flow-step,
-  .flow-bar span,
+  .flow-step {
+    --flow-shift: 0px;
+  }
+
   .flow-approve,
   .flow-dot {
     animation: none;
-  }
-
-  .flow-step {
-    opacity: 1;
   }
 }
 
