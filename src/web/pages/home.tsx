@@ -4,7 +4,7 @@ import { SignInChoices } from '../../demo/pages.js';
 import { LockIcon, PowerIcon, ShieldIcon } from '../components/icons.js';
 import { Layout } from '../layout.js';
 
-// The landing page. The order-flow card and audit rows are illustrations of the real flow (the
+// The landing page. The audit rows are illustrations of the real flow (the
 // same wording the app shows), not live data.
 
 function StartButtons(props: { signedIn: SignedIn | undefined }) {
@@ -21,60 +21,6 @@ function StartButtons(props: { signedIn: SignedIn | undefined }) {
 
 function Eyebrow(props: { children: Child }) {
   return <p class="kicker">{props.children}</p>;
-}
-
-function FlowStep(props: {
-  number: string;
-  title: string;
-  tone?: 'flag' | 'done';
-  children: Child;
-}) {
-  const toneClass = props.tone === undefined ? '' : ` is-${props.tone}`;
-  return (
-    <li class={`flow-step${toneClass}`}>
-      <span class="flow-marker">{props.number}</span>
-      <div>
-        <p class="flow-title">{props.title}</p>
-        {props.children}
-      </div>
-    </li>
-  );
-}
-
-// One order going through the gateway, lit up step by step by a CSS loop (no JavaScript).
-function OrderFlowPreview() {
-  return (
-    <figure class="flow-card">
-      <div class="flow-head">
-        <span class="flow-live">
-          <span class="flow-dot" />
-          One order, start to finish
-        </span>
-        <span class="flow-badge">Paper</span>
-      </div>
-      <ol class="flow-steps">
-        <FlowStep number="1" title="Claude proposes">
-          <p class="flow-detail">"Buy 1 AAPL in my Individual account"</p>
-        </FlowStep>
-        <FlowStep number="2" title="Your rules check it">
-          <div class="flow-bar">
-            <span />
-          </div>
-          <p class="flow-detail">16 of 16 rules passed, priced with SnapTrade's quote</p>
-        </FlowStep>
-        <FlowStep number="3" title="Claim Check flags it" tone="flag">
-          <p class="flow-detail">AI expected $330.00 · broker says $180.50</p>
-        </FlowStep>
-        <FlowStep number="4" title="You decide">
-          <span class="flow-approve">Approve</span>
-        </FlowStep>
-        <FlowStep number="5" title="Filled" tone="done">
-          <p class="flow-detail">1 AAPL at $180.50 · paper, no real money</p>
-        </FlowStep>
-      </ol>
-      <figcaption>An illustration of the real flow, on a loop.</figcaption>
-    </figure>
-  );
 }
 
 function Hero(props: { signedIn: SignedIn | undefined }) {
@@ -95,7 +41,6 @@ function Hero(props: { signedIn: SignedIn | undefined }) {
           16 server-side rules · Paper trading by default · Append-only audit log
         </p>
       </div>
-      <OrderFlowPreview />
     </section>
   );
 }
